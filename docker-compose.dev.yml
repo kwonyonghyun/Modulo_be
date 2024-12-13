@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  app:
+    image: kwonyonghyun/modulo:${IMAGE_TAG}
+    container_name: modulo-app-dev
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - OAUTH2_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - OAUTH2_GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SPRING_REDIS_HOST=${SPRING_REDIS_HOST}
+      - SPRING_REDIS_PORT=${SPRING_REDIS_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - redis
+    networks:
+      - modulo-network-dev
+
+  redis:
+    image: redis:latest
+    container_name: modulo-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    command: redis-server --appendonly yes
+    networks:
+      - modulo-network-dev
+
+networks:
+  modulo-network-dev:
+    driver: bridge
+
+volumes:
+  redis_data_dev:

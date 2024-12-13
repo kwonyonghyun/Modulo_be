@@ -25,16 +25,14 @@ public class Member extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private OAuthProvider provider;
 
-    private String providerId;
-
+    @Enumerated(EnumType.STRING)
     private Role role;
 
     @Builder
-    public Member(String email, String name, OAuthProvider provider, String providerId) {
+    public Member(String email, String name, OAuthProvider provider) {
         this.email = email;
         this.name = name;
         this.provider = provider;
-        this.providerId = providerId;
         this.role = Role.ROLE_USER;
     }
 }

@@ -32,4 +32,9 @@ public class AuthController {
         authService.logout(accessToken);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.LOGOUT_SUCCESS));
     }
+
+    @GetMapping("/test")
+    public String test() {
+        return "돼땅";
+    }
 }

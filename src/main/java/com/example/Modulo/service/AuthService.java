@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -51,7 +52,6 @@ public class AuthService {
     public TokenResponse googleLogin(String code) {
         String accessToken = getAccessToken(code);
         Map<String, Object> userInfo = getUserInfo(accessToken);
-
         String email = (String) userInfo.get("email");
         String name = (String) userInfo.get("name");
 
@@ -103,25 +103,39 @@ public class AuthService {
     }
 
     private String getAccessToken(String authorizationCode) {
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("code", authorizationCode);
-        params.add("client_id", googleClientId);
-        params.add("client_secret", googleClientSecret);
-        params.add("redirect_uri", googleRedirectUri);
-        params.add("grant_type", "authorization_code");
+        try {
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("code", authorizationCode);
+            params.add("client_id", googleClientId);
+            params.add("client_secret", googleClientSecret);
+            params.add("redirect_uri", googleRedirectUri);
+            params.add("grant_type", "authorization_code");
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(googleTokenUri, HttpMethod.POST, request, Map.class);
+            try {
+                ResponseEntity<Map> response = restTemplate.exchange(
+                        googleTokenUri,
+                        HttpMethod.POST,
+                        request,
+                        Map.class
+                );
 
-        if (response.getBody() == null) {
+                if (response.getBody() == null) {
+                    throw new SocialLoginTokenNotFoundException();
+                }
+
+                return (String) response.getBody().get("access_token");
+            } catch (HttpClientErrorException e) {
+                throw e;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
             throw new SocialLoginTokenNotFoundException();
         }
-
-        return (String) response.getBody().get("access_token");
     }
 
     private Map<String, Object> getUserInfo(String accessToken) {

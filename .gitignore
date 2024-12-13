@@ -38,3 +38,8 @@ out/
 
 application-local.yml
 src/main/java/com/example/Modulo/controller/TestController.java
+
+.env.local
+.env.dev
+.env.prod
+application.yml
