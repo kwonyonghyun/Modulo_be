@@ -44,6 +44,12 @@ public enum ResultCode {
     ETC_UPDATE_SUCCESS(200, "ET003", "기타사항이 성공적으로 수정되었습니다."),
     ETC_DELETE_SUCCESS(200, "ET004", "기타사항이 성공적으로 삭제되었습니다."),
 
+    // Basic Info
+    BASIC_INFO_CREATE_SUCCESS(200, "BI001", "기본 정보가 성공적으로 생성되었습니다."),
+    BASIC_INFO_GET_SUCCESS(200, "BI002", "기본 정보 조회에 성공하였습니다."),
+    BASIC_INFO_UPDATE_SUCCESS(200, "BI003", "기본 정보가 성공적으로 수정되었습니다."),
+    BASIC_INFO_DELETE_SUCCESS(200, "BI004", "기본 정보가 성공적으로 삭제되었습니다. ")
+
     ;
 
     private final int status;

@@ -30,3 +30,15 @@ oauth2:
 jwt:
   secret: ${JWT_SECRET}
   token-validity-in-seconds: 3600
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    s3:
+      bucket: ${AWS_S3_BUCKET}
+    region:
+      static: ${AWS_REGION}
+    stack:
+      auto: false
