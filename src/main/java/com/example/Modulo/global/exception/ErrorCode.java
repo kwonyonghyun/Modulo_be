@@ -43,6 +43,10 @@ public enum ErrorCode {
     PROJECT_NOT_FOUND(404, "PJ001", "프로젝트를 찾을 수 없습니다."),
     PROJECT_UNAUTHORIZED(403, "PJ002", "프로젝트에 대한 권한이 없습니다."),
     PROJECT_INVALID_DATE(400, "PJ003", "프로젝트 기간이 올바르지 않습니다."),
+
+    // Etc
+    ETC_NOT_FOUND(404, "ET001", "존재하지 않는 기타사항입니다."),
+    UNAUTHORIZED_ETC_ACCESS(403, "ET002", "기타사항에 대한 권한이 없습니다."),
     ;
 
     private final int status;

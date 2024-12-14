@@ -21,7 +21,7 @@ public enum ResultCode {
 
     //Career
     CAREER_CREATE_SUCCESS(200, "CR001", "경력 정보가 성공적으로 생성되었습니다."),
-    CAREER_GET_SUCCESS(200, "CR002", "경력 정보 조회에 성공하였습니다."),
+    CAREER_GET_SUCCESS(200, "CR002", "경력 정보 조회에 성공하���습니다."),
     CAREER_UPDATE_SUCCESS(200, "CR003", "경력 정보가 성공적으로 수정되었습니다."),
     CAREER_DELETE_SUCCESS(200, "CR004", "경력 정보가 성공적으로 삭제되었습니다."),
 
@@ -37,6 +37,12 @@ public enum ResultCode {
     PROJECT_GET_SUCCESS(200, "PJ002", "프로젝트 정보 조회에 성공하였습니다."),
     PROJECT_UPDATE_SUCCESS(200, "PJ003", "프로젝트 정보가 성공적으로 수정되었습니다."),
     PROJECT_DELETE_SUCCESS(200, "PJ004", "프로젝트 정보가 성공적으로 삭제되었습니다."),
+
+    // Etc
+    ETC_CREATE_SUCCESS(200, "ET001", "기타사항이 성공적으로 생성되었습니다."),
+    ETC_GET_SUCCESS(200, "ET002", "기타사항 조회에 성공하였습니다."),
+    ETC_UPDATE_SUCCESS(200, "ET003", "기타사항이 성공적으로 수정되었습니다."),
+    ETC_DELETE_SUCCESS(200, "ET004", "기타사항이 성공적으로 삭제되었습니다."),
 
     ;
 
