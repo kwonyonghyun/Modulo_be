@@ -24,6 +24,15 @@ public enum ErrorCode {
     // Member
     MEMBER_NOT_FOUND(404, "M001", "존재하지 않는 유저입니다."),
 
+    //Education
+    INVALID_EDUCATION_LEVEL(400, "E001", "유효하지 않은 학력 레벨입니다."),
+    EDUCATION_NOT_FOUND(404, "E002", "존재하지 않는 학력 정보입니다."),
+    EDUCATION_CREATE_SUCCESS(200, "E003", "학력 정보가 성공적으로 생성되었습니다."),
+    EDUCATION_UPDATE_SUCCESS(200, "E004", "학력 정보가 성공적으로 수정되었습니다."),
+    EDUCATION_DELETE_SUCCESS(200, "E005", "학력 정보가 성공적으로 삭제되었습니다."),
+    EDUCATION_GET_SUCCESS(200, "E006", "학력 정보 조회에 성공하였습니다."),
+    UNAUTHORIZED_ACCESS(403, "E007", "해당 리소스에 대한 접근 권한이 없습니다.")
+
     ;
 
     private final int status;
