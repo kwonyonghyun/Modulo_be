@@ -17,7 +17,14 @@ public enum ResultCode {
     EDUCATION_CREATE_SUCCESS(200, "ED001", "학력 정보가 성공적으로 생성되었습니다."),
     EDUCATION_GET_SUCCESS(200, "ED002", "학력 정보 조회에 성공하였습니다."),
     EDUCATION_UPDATE_SUCCESS(200, "ED003", "학력 정보가 성공적으로 수정되었습니다."),
-    EDUCATION_DELETE_SUCCESS(200, "ED004", "학력 정보가 성공적으로 삭제되었습니다.")
+    EDUCATION_DELETE_SUCCESS(200, "ED004", "학력 정보가 성공적으로 삭제되었습니다."),
+
+    //Career
+    CAREER_CREATE_SUCCESS(200, "CR001", "경력 정보가 성공적으로 생성되었습니다."),
+    CAREER_GET_SUCCESS(200, "CR002", "경력 정보 조회에 성공하였습니다."),
+    CAREER_UPDATE_SUCCESS(200, "CR003", "경력 정보가 성공적으로 수정되었습니다."),
+    CAREER_DELETE_SUCCESS(200, "CR004", "경력 정보가 성공적으로 삭제되었습니다."),
+
     ;
 
     private final int status;
