@@ -25,6 +25,19 @@ public enum ResultCode {
     CAREER_UPDATE_SUCCESS(200, "CR003", "경력 정보가 성공적으로 수정되었습니다."),
     CAREER_DELETE_SUCCESS(200, "CR004", "경력 정보가 성공적으로 삭제되었습니다."),
 
+
+    //Self Introduction
+    SELF_INTRODUCTION_CREATE_SUCCESS(200, "SL001", "자기소개서가 성공적으로 생성되었습니다. "),
+    SELF_INTRODUCTION_GET_SUCCESS(200, "SL002","자기소개서 정보 조회에 성공하였습니다. "),
+    SELF_INTRODUCTION_UPDATE_SUCCESS(200, "SL003","자기소개서 정보가 성공적으로 수정되었습니다. "),
+    SELF_INTRODUCTION_DELETE_SUCCESS(200, "SL004", "자기소개서 정보가 성공적으로 삭제되었습니다. "),
+
+    // Project
+    PROJECT_CREATE_SUCCESS(200, "PJ001", "프로젝트가 성공적으로 생성되었습니다."),
+    PROJECT_GET_SUCCESS(200, "PJ002", "프로젝트 정보 조회에 성공하였습니다."),
+    PROJECT_UPDATE_SUCCESS(200, "PJ003", "프로젝트 정보가 성공적으로 수정되었습니다."),
+    PROJECT_DELETE_SUCCESS(200, "PJ004", "프로젝트 정보가 성공적으로 삭제되었습니다."),
+
     ;
 
     private final int status;

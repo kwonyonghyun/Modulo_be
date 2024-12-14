@@ -35,6 +35,14 @@ public enum ErrorCode {
 
     //Career
     CAREER_NOT_FOUND(404, "CR001", "존재하지 않는 경력 정보입니다."),
+
+    //Self Introduction
+    SELF_INTRODUCTION_NOT_FOUND(404, "SI001", "존재하지 않는 자기소개서 정보입니다."),
+
+    // Project
+    PROJECT_NOT_FOUND(404, "PJ001", "프로젝트를 찾을 수 없습니다."),
+    PROJECT_UNAUTHORIZED(403, "PJ002", "프로젝트에 대한 권한이 없습니다."),
+    PROJECT_INVALID_DATE(400, "PJ003", "프로젝트 기간이 올바르지 않습니다."),
     ;
 
     private final int status;
