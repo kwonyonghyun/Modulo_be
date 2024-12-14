@@ -44,4 +44,10 @@ public class EducationController {
         educationService.deleteEducation(id);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.EDUCATION_DELETE_SUCCESS));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ResultResponse> getEducation(@PathVariable Long id) {
+        EducationResponse educationResponse = educationService.getEducationById(id);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.EDUCATION_GET_SUCCESS, educationResponse));
+    }
 }

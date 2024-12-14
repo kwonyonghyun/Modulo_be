@@ -44,4 +44,10 @@ public class EtcController {
         etcService.deleteEtc(id);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.ETC_DELETE_SUCCESS));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ResultResponse> getEtc(@PathVariable Long id) {
+        EtcResponse etcResponse = etcService.getEtcById(id);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.ETC_GET_SUCCESS, etcResponse));
+    }
 } 

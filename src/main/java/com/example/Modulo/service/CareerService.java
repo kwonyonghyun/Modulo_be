@@ -88,6 +88,16 @@ public class CareerService {
         careerRepository.delete(career);
     }
 
+    public CareerResponse getCareerById(Long careerId) {
+        Long memberId = getCurrentMemberId();
+        Career career = careerRepository.findById(careerId)
+                .orElseThrow(CareerNotFoundException::new);
+
+        validateMemberAccess(career, memberId);
+
+        return CareerResponse.from(career);
+    }
+
     private void validateMemberAccess(Career career, Long memberId) {
         if (!career.getMember().getId().equals(memberId)) {
             throw new UnauthorizedAccessException();

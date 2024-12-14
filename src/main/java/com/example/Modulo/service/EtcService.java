@@ -79,6 +79,15 @@ public class EtcService {
         etcRepository.delete(etc);
     }
 
+    public EtcResponse getEtcById(Long id) {
+        Etc etc = etcRepository.findById(id)
+                .orElseThrow(EtcNotFoundException::new);
+
+        validateMemberAccess(etc);
+
+        return EtcResponse.from(etc);
+    }
+
     private Member getMemberFromToken() {
         Long memberId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
         return memberRepository.findById(memberId)

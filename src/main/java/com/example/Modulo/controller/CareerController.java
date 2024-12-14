@@ -44,4 +44,10 @@ public class CareerController {
         careerService.deleteCareer(id);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.CAREER_DELETE_SUCCESS));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ResultResponse> getCareer(@PathVariable Long id) {
+        CareerResponse careerResponse = careerService.getCareerById(id);
+        return ResponseEntity.ok(ResultResponse.of(ResultCode.CAREER_GET_SUCCESS, careerResponse));
+    }
 }

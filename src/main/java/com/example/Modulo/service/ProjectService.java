@@ -88,6 +88,16 @@ public class ProjectService {
         projectRepository.delete(project);
     }
 
+    public ProjectResponse getProjectById(Long projectId) {
+        Long memberId = getCurrentMemberId();
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(ProjectNotFoundException::new);
+
+        validateMemberAccess(project, memberId);
+
+        return ProjectResponse.from(project);
+    }
+
     private void validateMemberAccess(Project project, Long memberId) {
         if (!project.getMember().getId().equals(memberId)) {
             throw new UnauthorizedAccessException();

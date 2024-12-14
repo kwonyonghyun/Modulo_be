@@ -84,6 +84,16 @@ public class EducationService {
         educationRepository.delete(education);
     }
 
+    public EducationResponse getEducationById(Long educationId) {
+        Long memberId = getCurrentMemberId();
+        Education education = educationRepository.findById(educationId)
+                .orElseThrow(EducationNotFoundException::new);
+
+        validateMemberAccess(education, memberId);
+
+        return EducationResponse.from(education);
+    }
+
     private void validateMemberAccess(Education education, Long memberId) {
         if (!education.getMember().getId().equals(memberId)) {
             throw new UnauthorizedAccessException();
