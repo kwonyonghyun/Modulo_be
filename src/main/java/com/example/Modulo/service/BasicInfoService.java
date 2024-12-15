@@ -75,8 +75,7 @@ public class BasicInfoService {
     @Transactional
     public void updateBasicInfo(Long id, BasicInfoUpdateRequest request, MultipartFile profileImage) {
         Long memberId = getCurrentMemberId();
-        BasicInfo basicInfo = basicInfoRepository.findById(id)
-                .orElseThrow(BasicInfoNotFoundException::new);
+        BasicInfo basicInfo = getBasicInfo(id);
 
         if (!basicInfo.getMember().getId().equals(memberId)) {
             throw new BasicInfoUnauthorizedException();
@@ -112,11 +111,16 @@ public class BasicInfoService {
         basicInfo.updateTechStack(request.getTechStack());
     }
 
+    private BasicInfo getBasicInfo(Long id) {
+        BasicInfo basicInfo = basicInfoRepository.findById(id)
+                .orElseThrow(BasicInfoNotFoundException::new);
+        return basicInfo;
+    }
+
     @Transactional
     public void deleteBasicInfo(Long id) {
         Long memberId = getCurrentMemberId();
-        BasicInfo basicInfo = basicInfoRepository.findById(id)
-                .orElseThrow(BasicInfoNotFoundException::new);
+        BasicInfo basicInfo = getBasicInfo(id);
 
         if (!basicInfo.getMember().getId().equals(memberId)) {
             throw new BasicInfoUnauthorizedException();
@@ -137,8 +141,7 @@ public class BasicInfoService {
     }
 
     public BasicInfoResponse getBasicInfoById(Long id) {
-        BasicInfo basicInfo = basicInfoRepository.findById(id)
-                .orElseThrow(BasicInfoNotFoundException::new);
+        BasicInfo basicInfo = getBasicInfo(id);
         return BasicInfoResponse.from(basicInfo);
     }
 }

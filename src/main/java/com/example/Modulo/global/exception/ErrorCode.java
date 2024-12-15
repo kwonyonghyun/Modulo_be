@@ -59,6 +59,15 @@ public enum ErrorCode {
     INVALID_FILE_TYPE(400, "F003", "지원하지 않는 파일 형식입니다."),
     FILE_SIZE_EXCEED(400, "F004", "파일 크기가 제한을 초과했습니다."),
     FILE_NOT_FOUND(404, "F005", "파일을 찾을 수 없습니다."),
+
+    // Resume
+    RESUME_NOT_FOUND(404, "RS001", "존재하지 않는 이력서입니다."),
+    RESUME_UNAUTHORIZED(403, "RS002", "이력서에 대한 권한이 없습니다."),
+    INVALID_SECTION_ORDER(400, "RS003", "섹션 순서가 올바르지 않습니다."),
+    INVALID_CONTENT_ORDER(400, "RS004", "컨텐츠 순서가 올바르지 않습니다."),
+    INVALID_MARGIN_VALUE(400, "RS005", "여백 값이 올바르지 않습니다."),
+    INVALID_SECTION_TYPE(400, "RS006", "존재하지 않는 섹션 타입입니다."),
+    INVALID_SECTION_CONTENT(400, "RS007", "존재하지 않는 섹션 콘텐츠입니다."),
     ;
 
     private final int status;

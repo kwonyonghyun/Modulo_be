@@ -56,8 +56,7 @@ public class SelfIntroductionService {
     @Transactional
     public void updateSelfIntroduction(Long selfIntroductionId, SelfIntroductionUpdateRequest request) {
         Long memberId = getCurrentMemberId();
-        SelfIntroduction selfIntroduction = selfIntroductionRepository.findById(selfIntroductionId)
-                .orElseThrow(SelfIntroductionNotFoundException::new);
+        SelfIntroduction selfIntroduction = getSelfIntroduction(selfIntroductionId);
 
         validateMemberAccess(selfIntroduction, memberId);
 
@@ -67,11 +66,16 @@ public class SelfIntroductionService {
         );
     }
 
+    private SelfIntroduction getSelfIntroduction(Long selfIntroductionId) {
+        SelfIntroduction selfIntroduction = selfIntroductionRepository.findById(selfIntroductionId)
+                .orElseThrow(SelfIntroductionNotFoundException::new);
+        return selfIntroduction;
+    }
+
     @Transactional
     public void deleteSelfIntroduction(Long selfIntroductionId) {
         Long memberId = getCurrentMemberId();
-        SelfIntroduction selfIntroduction = selfIntroductionRepository.findById(selfIntroductionId)
-                .orElseThrow(SelfIntroductionNotFoundException::new);
+        SelfIntroduction selfIntroduction = getSelfIntroduction(selfIntroductionId);
 
         validateMemberAccess(selfIntroduction, memberId);
 
@@ -86,8 +90,7 @@ public class SelfIntroductionService {
 
     public SelfIntroductionResponse getIntroductionById(Long selfIntroductionId) {
         Long memberId = getCurrentMemberId();
-        SelfIntroduction selfIntroduction = selfIntroductionRepository.findById(selfIntroductionId)
-                .orElseThrow(SelfIntroductionNotFoundException::new);
+        SelfIntroduction selfIntroduction = getSelfIntroduction(selfIntroductionId);
 
         validateMemberAccess(selfIntroduction, memberId);
 

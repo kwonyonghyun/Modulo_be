@@ -61,8 +61,7 @@ public class CareerService {
     @Transactional
     public void updateCareer(Long careerId, CareerUpdateRequest request) {
         Long memberId = getCurrentMemberId();
-        Career career = careerRepository.findById(careerId)
-                .orElseThrow(CareerNotFoundException::new);
+        Career career = getCareer(careerId);
 
         validateMemberAccess(career, memberId);
 
@@ -77,11 +76,16 @@ public class CareerService {
         );
     }
 
+    private Career getCareer(Long careerId) {
+        Career career = careerRepository.findById(careerId)
+                .orElseThrow(CareerNotFoundException::new);
+        return career;
+    }
+
     @Transactional
     public void deleteCareer(Long careerId) {
         Long memberId = getCurrentMemberId();
-        Career career = careerRepository.findById(careerId)
-                .orElseThrow(CareerNotFoundException::new);
+        Career career = getCareer(careerId);
 
         validateMemberAccess(career, memberId);
 
@@ -90,8 +94,7 @@ public class CareerService {
 
     public CareerResponse getCareerById(Long careerId) {
         Long memberId = getCurrentMemberId();
-        Career career = careerRepository.findById(careerId)
-                .orElseThrow(CareerNotFoundException::new);
+        Career career = getCareer(careerId);
 
         validateMemberAccess(career, memberId);
 

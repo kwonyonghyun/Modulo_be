@@ -59,8 +59,7 @@ public class EducationService {
     @Transactional
     public void updateEducation(Long educationId, EducationUpdateRequest request) {
         Long memberId = getCurrentMemberId();
-        Education education = educationRepository.findById(educationId)
-                .orElseThrow(EducationNotFoundException::new);
+        Education education = getEducation(educationId);
 
         validateMemberAccess(education, memberId);
 
@@ -73,25 +72,28 @@ public class EducationService {
         );
     }
 
+    private Education getEducation(Long educationId) {
+        Education education = educationRepository.findById(educationId)
+                .orElseThrow(EducationNotFoundException::new);
+        return education;
+    }
+
+    public EducationResponse getEducationById(Long educationId) {
+        Education education = getEducation(educationId);
+
+        validateMemberAccess(education, getCurrentMemberId());
+
+        return EducationResponse.from(education);
+    }
+
     @Transactional
     public void deleteEducation(Long educationId) {
         Long memberId = getCurrentMemberId();
-        Education education = educationRepository.findById(educationId)
-                .orElseThrow(EducationNotFoundException::new);
+        Education education = getEducation(educationId);
 
         validateMemberAccess(education, memberId);
 
         educationRepository.delete(education);
-    }
-
-    public EducationResponse getEducationById(Long educationId) {
-        Long memberId = getCurrentMemberId();
-        Education education = educationRepository.findById(educationId)
-                .orElseThrow(EducationNotFoundException::new);
-
-        validateMemberAccess(education, memberId);
-
-        return EducationResponse.from(education);
     }
 
     private void validateMemberAccess(Education education, Long memberId) {

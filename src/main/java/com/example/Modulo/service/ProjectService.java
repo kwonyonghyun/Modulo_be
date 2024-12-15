@@ -61,8 +61,7 @@ public class ProjectService {
     @Transactional
     public void updateProject(Long projectId, ProjectUpdateRequest request) {
         Long memberId = getCurrentMemberId();
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(ProjectNotFoundException::new);
+        Project project = getProject(projectId);
 
         validateMemberAccess(project, memberId);
 
@@ -80,8 +79,7 @@ public class ProjectService {
     @Transactional
     public void deleteProject(Long projectId) {
         Long memberId = getCurrentMemberId();
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(ProjectNotFoundException::new);
+        Project project = getProject(projectId);
 
         validateMemberAccess(project, memberId);
 
@@ -90,12 +88,17 @@ public class ProjectService {
 
     public ProjectResponse getProjectById(Long projectId) {
         Long memberId = getCurrentMemberId();
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(ProjectNotFoundException::new);
+        Project project = getProject(projectId);
 
         validateMemberAccess(project, memberId);
 
         return ProjectResponse.from(project);
+    }
+
+    private Project getProject(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(ProjectNotFoundException::new);
+        return project;
     }
 
     private void validateMemberAccess(Project project, Long memberId) {

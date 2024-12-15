@@ -53,6 +53,12 @@ public enum ResultCode {
     //Saved Module
     SAVED_MODULE_GET_SUCCESS(200, "SM001", "저장된 모듈 조회에 성공하였습니다."),
 
+    // Resume
+    RESUME_CREATE_SUCCESS(200, "RS001", "이력서가 성공적으로 생성되었습니다."),
+    RESUME_GET_SUCCESS(200, "RS002", "이력서 조회에 성공하였습니다."),
+    RESUME_UPDATE_SUCCESS(200, "RS003", "이력서가 성공적으로 수정되었습니다."),
+    RESUME_DELETE_SUCCESS(200, "RS004", "이력서가 성공적으로 삭제되었습니다."),
+
     ;
 
     private final int status;
