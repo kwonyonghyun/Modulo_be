@@ -28,8 +28,8 @@ public enum ResultCode {
 
     //Self Introduction
     SELF_INTRODUCTION_CREATE_SUCCESS(200, "SL001", "자기소개서가 성공적으로 생성되었습니다. "),
-    SELF_INTRODUCTION_GET_SUCCESS(200, "SL002","자기소개서 정보 조회에 성공하였습니다. "),
-    SELF_INTRODUCTION_UPDATE_SUCCESS(200, "SL003","자기소개서 정보가 성공적으로 수정되었습니다. "),
+    SELF_INTRODUCTION_GET_SUCCESS(200, "SL002", "자기소개서 정보 조회에 성공하였습니다. "),
+    SELF_INTRODUCTION_UPDATE_SUCCESS(200, "SL003", "자기소개서 정보가 성공적으로 수정되었습니다. "),
     SELF_INTRODUCTION_DELETE_SUCCESS(200, "SL004", "자기소개서 정보가 성공적으로 삭제되었습니다. "),
 
     // Project
@@ -48,7 +48,10 @@ public enum ResultCode {
     BASIC_INFO_CREATE_SUCCESS(200, "BI001", "기본 정보가 성공적으로 생성되었습니다."),
     BASIC_INFO_GET_SUCCESS(200, "BI002", "기본 정보 조회에 성공하였습니다."),
     BASIC_INFO_UPDATE_SUCCESS(200, "BI003", "기본 정보가 성공적으로 수정되었습니다."),
-    BASIC_INFO_DELETE_SUCCESS(200, "BI004", "기본 정보가 성공적으로 삭제되었습니다. ")
+    BASIC_INFO_DELETE_SUCCESS(200, "BI004", "기본 정보가 성공적으로 삭제되었습니다. "),
+
+    //Saved Module
+    SAVED_MODULE_GET_SUCCESS(200, "SM001", "저장된 모듈 조회에 성공하였습니다."),
 
     ;
 
