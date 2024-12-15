@@ -16,8 +16,8 @@ public class AuthController {
     private final AuthService authService;
 
     @GetMapping("/login/google")
-    public ResponseEntity<ResultResponse> googleCallback(@RequestParam("code") String code) {
-        TokenResponse tokenResponse = authService.googleLogin(code);
+    public ResponseEntity<ResultResponse> googleLogin(@RequestParam("accessToken") String accessToken) {
+        TokenResponse tokenResponse = authService.googleLogin(accessToken);
         return ResponseEntity.ok(ResultResponse.of(ResultCode.SOCIAL_LOGIN_SUCCESS, tokenResponse));
     }
 

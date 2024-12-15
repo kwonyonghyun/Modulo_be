@@ -49,8 +49,7 @@ public class AuthService {
     private String googleResourceUri;
 
     @Transactional
-    public TokenResponse googleLogin(String code) {
-        String accessToken = getAccessToken(code);
+    public TokenResponse googleLogin(String accessToken) {
         Map<String, Object> userInfo = getUserInfo(accessToken);
         String email = (String) userInfo.get("email");
         String name = (String) userInfo.get("name");
@@ -65,9 +64,29 @@ public class AuthService {
         String jwtToken = jwtTokenProvider.createAccessToken(member.getId(), member.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
 
-        redisService.setValues(REFRESH_TOKEN_PREFIX+member.getId(), refreshToken);
+        redisService.setValues(REFRESH_TOKEN_PREFIX + member.getId(), refreshToken);
 
         return new TokenResponse(jwtToken, refreshToken);
+    }
+
+    private Map<String, Object> getUserInfo(String accessToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<String> entity = new HttpEntity<>("", headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                googleResourceUri,
+                HttpMethod.GET,
+                entity,
+                Map.class
+        );
+
+        if (response.getBody() == null) {
+            throw new SocialLoginUserInfoNotFoundException();
+        }
+
+        return response.getBody();
     }
 
     public TokenResponse refresh(String refreshToken) {
@@ -136,21 +155,6 @@ public class AuthService {
             e.printStackTrace();
             throw new SocialLoginTokenNotFoundException();
         }
-    }
-
-    private Map<String, Object> getUserInfo(String accessToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-
-        HttpEntity<String> entity = new HttpEntity<>("", headers);
-
-        ResponseEntity<Map> response = restTemplate.exchange(googleResourceUri, HttpMethod.GET, entity, Map.class);
-
-        if (response.getBody() == null) {
-            throw new SocialLoginUserInfoNotFoundException();
-        }
-
-        return response.getBody();
     }
 
     private Member getMemberById(Long memberId) {
