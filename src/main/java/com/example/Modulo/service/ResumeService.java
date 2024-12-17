@@ -108,7 +108,7 @@ public class ResumeService {
                     case SELF_INTRODUCTION -> selfIntroductionService.getIntroductionById(content.getContentId());
                 }
             } catch (Exception e) {
-                throw new InvalidSectionContentException(sectionType, content.getContentId());
+                throw new InvalidSectionContentException();
             }
         });
     }

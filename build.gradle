@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.2.1'
 	id 'io.spring.dependency-management' version '1.1.4'
+	id 'jacoco'
 }
 
 group = 'com.modulo'
@@ -47,13 +48,26 @@ dependencies {
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.261'
 }
 
+jacoco {
+	toolVersion = "0.8.9"
+}
+
 test {
 	useJUnitPlatform()
 	testLogging {
 		events "passed", "skipped", "failed"
 	}
+	finalizedBy jacocoTestReport
 }
 
-tasks.named('test') {
-	useJUnitPlatform()
+jacocoTestReport {
+	reports {
+		xml.required = true
+		csv.required = false
+		html.required = true
+	}
+}
+
+tasks.named('jacocoTestReport') {
+	dependsOn test
 }

@@ -79,12 +79,16 @@ public class BasicInfo extends BaseTimeEntity {
 
     public void updateLinks(List<Link> newLinks) {
         this.links.clear();
-        newLinks.forEach(link -> link.setBasicInfo(this));
-        this.links.addAll(newLinks);
+        if (newLinks != null) {
+            newLinks.forEach(link -> link.setBasicInfo(this));
+            this.links.addAll(newLinks);
+        }
     }
 
     public void updateTechStack(List<String> techStack) {
         this.techStack.clear();
-        this.techStack.addAll(techStack);
+        if (techStack != null) {
+            this.techStack.addAll(techStack);
+        }
     }
 }

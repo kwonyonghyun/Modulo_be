@@ -1,5 +1,6 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidEmailException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import com.example.Modulo.global.enums.OAuthProvider;
 import com.example.Modulo.global.enums.Role;
@@ -16,6 +17,8 @@ import java.util.List;
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Member extends BaseTimeEntity {
 
+    private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@(.+)$";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,6 +26,7 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
     private String name;
 
     @Enumerated(EnumType.STRING)
@@ -31,13 +35,12 @@ public class Member extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
-    private List<Education> educations = new ArrayList<>();
-
+    @Column(nullable = false)
     private String nickname;
 
     @Builder
     public Member(String email, String name, OAuthProvider provider) {
+        validateEmail(email);
         this.email = email;
         this.name = name;
         this.provider = provider;
@@ -47,5 +50,11 @@ public class Member extends BaseTimeEntity {
 
     public void updateNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    private void validateEmail(String email) {
+        if (email == null || !email.matches(EMAIL_REGEX)) {
+            throw new InvalidEmailException(email);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidCareerDateException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import com.example.Modulo.global.converter.YearMonthConverter;
 import jakarta.persistence.*;
@@ -51,24 +52,35 @@ public class Career extends BaseTimeEntity {
     @Builder
     public Career(Member member, YearMonth startDate, YearMonth endDate, String companyName,
                   String companyDescription, String position, List<String> techStack, String achievements) {
+        validateDate(startDate, endDate);
         this.member = member;
         this.startDate = startDate;
         this.endDate = endDate;
         this.companyName = companyName;
         this.companyDescription = companyDescription;
         this.position = position;
-        this.techStack = techStack;
+        this.techStack = techStack != null ? new ArrayList<>(techStack) : new ArrayList<>();
         this.achievements = achievements;
     }
 
     public void update(YearMonth startDate, YearMonth endDate, String companyName,
                        String companyDescription, String position, List<String> techStack, String achievements) {
+        validateDate(startDate, endDate);
         this.startDate = startDate;
         this.endDate = endDate;
         this.companyName = companyName;
         this.companyDescription = companyDescription;
         this.position = position;
-        this.techStack = techStack;
+        this.techStack = techStack != null ? new ArrayList<>(techStack) : new ArrayList<>();
         this.achievements = achievements;
+    }
+
+    private void validateDate(YearMonth startDate, YearMonth endDate) {
+        if (startDate == null || endDate == null) {
+            throw new InvalidCareerDateException();
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new InvalidCareerDateException();
+        }
     }
 }

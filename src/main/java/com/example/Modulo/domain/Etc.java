@@ -1,5 +1,7 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidEtcDateException;
+import com.example.Modulo.exception.InvalidEtcFieldException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import com.example.Modulo.global.converter.YearMonthConverter;
 import com.example.Modulo.global.enums.EtcType;
@@ -33,7 +35,7 @@ public class Etc extends BaseTimeEntity {
     @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -49,6 +51,8 @@ public class Etc extends BaseTimeEntity {
     @Builder
     public Etc(Member member, YearMonth startDate, YearMonth endDate, String title,
                String description, EtcType type, String organization, String score) {
+        validateDate(startDate);
+        validateFields(title, description, type);
         this.member = member;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -60,7 +64,9 @@ public class Etc extends BaseTimeEntity {
     }
 
     public void update(YearMonth startDate, YearMonth endDate, String title,
-                      String description, EtcType type, String organization, String score) {
+                       String description, EtcType type, String organization, String score) {
+        validateDate(startDate);
+        validateFields(title, description, type);
         this.startDate = startDate;
         this.endDate = endDate;
         this.title = title;
@@ -69,4 +75,18 @@ public class Etc extends BaseTimeEntity {
         this.organization = organization;
         this.score = score;
     }
-} 
+
+    private void validateDate(YearMonth startDate) {
+        if (startDate == null) {
+            throw new InvalidEtcDateException();
+        }
+    }
+
+    private void validateFields(String title, String description, EtcType type) {
+        if (title == null || title.trim().isEmpty() ||
+                description == null || description.trim().isEmpty() ||
+                type == null) {
+            throw new InvalidEtcFieldException();
+        }
+    }
+}

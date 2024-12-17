@@ -1,5 +1,6 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidSelfIntroductionFieldException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -27,13 +28,22 @@ public class SelfIntroduction extends BaseTimeEntity {
 
     @Builder
     public SelfIntroduction(Member member, String title, String content) {
+        validateFields(title, content);
         this.member = member;
         this.title = title;
         this.content = content;
     }
 
     public void update(String title, String content) {
+        validateFields(title, content);
         this.title = title;
         this.content = content;
+    }
+
+    private void validateFields(String title, String content) {
+        if (title == null || title.trim().isEmpty() ||
+                content == null || content.trim().isEmpty()) {
+            throw new InvalidSelfIntroductionFieldException();
+        }
     }
 }

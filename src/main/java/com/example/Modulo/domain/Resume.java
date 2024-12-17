@@ -1,5 +1,6 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidResumeTitleException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -30,11 +31,13 @@ public class Resume extends BaseTimeEntity {
 
     @Builder
     public Resume(Member member, String title) {
+        validateTitle(title);
         this.member = member;
         this.title = title;
     }
 
     public void updateTitle(String title) {
+        validateTitle(title);
         this.title = title;
     }
 
@@ -42,5 +45,11 @@ public class Resume extends BaseTimeEntity {
         this.sections.clear();
         sections.forEach(section -> section.setResume(this));
         this.sections.addAll(sections);
+    }
+
+    private void validateTitle(String title) {
+        if (title == null || title.trim().isEmpty()) {
+            throw new InvalidResumeTitleException();
+        }
     }
 }

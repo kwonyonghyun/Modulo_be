@@ -23,6 +23,7 @@ public enum ErrorCode {
 
     // Member
     MEMBER_NOT_FOUND(404, "M001", "존재하지 않는 유저입니다."),
+    INVALID_EMAIL(400, "M002", "유효하지 않은 이메일 형식입니다"),
 
     //Education
     INVALID_EDUCATION_LEVEL(400, "E001", "유효하지 않은 학력 레벨입니다."),
@@ -32,21 +33,30 @@ public enum ErrorCode {
     EDUCATION_DELETE_SUCCESS(200, "E005", "학력 정보가 성공적으로 삭제되었습니다."),
     EDUCATION_GET_SUCCESS(200, "E006", "학력 정보 조회에 성공하였습니다."),
     UNAUTHORIZED_ACCESS(403, "E007", "해당 리소스에 대한 접근 권한이 없습니다."),
+    INVALID_EDUCATION_DATE(400, "E008", "유효하지 않은 교육 기간입니다"),
+    INVALID_EDUCATION_FIELD(400, "E009", "유효하지 않은 교육 정보입니다"),
 
     //Career
     CAREER_NOT_FOUND(404, "CR001", "존재하지 않는 경력 정보입니다."),
+    INVALID_CAREER_DATE(400, "CR002", "유효하지 않은 경력 기간입니다"),
+    INVALID_CAREER_FIELD(400, "CR003", "유효하지 않은 경력 정보입니다"),
 
     //Self Introduction
     SELF_INTRODUCTION_NOT_FOUND(404, "SI001", "존재하지 않는 자기소개서 정보입니다."),
+    INVALID_SELF_INTRODUCTION_FIELD(400, "SI002", "유효하지 않은 자기소개서 정보입니다"),
 
     // Project
     PROJECT_NOT_FOUND(404, "PJ001", "프로젝트를 찾을 수 없습니다."),
     PROJECT_UNAUTHORIZED(403, "PJ002", "프로젝트에 대한 권한이 없습니다."),
     PROJECT_INVALID_DATE(400, "PJ003", "프로젝트 기간이 올바르지 않습니다."),
+    INVALID_PROJECT_DATE(400, "PJ004", "유효하지 않은 프로젝트 기간입니다"),
+    INVALID_PROJECT_FIELD(400, "PJ005", "유효하지 않은 프로젝트 정보입니다"),
 
     // Etc
     ETC_NOT_FOUND(404, "ET001", "존재하지 않는 기타사항입니다."),
     UNAUTHORIZED_ETC_ACCESS(403, "ET002", "기타사항에 대한 권한이 없습니다."),
+    INVALID_ETC_DATE(400, "ET003", "유효하지 않은 기타 활동 기간입니다"),
+    INVALID_ETC_FIELD(400, "ET004", "유효하지 않은 기타 활동 정보입니다"),
 
     // BasicInfo
     BASIC_INFO_NOT_FOUND(404, "BI001", "존재하지 않는 기본 정보입니다."),
@@ -68,6 +78,12 @@ public enum ErrorCode {
     INVALID_MARGIN_VALUE(400, "RS005", "여백 값이 올바르지 않습니다."),
     INVALID_SECTION_TYPE(400, "RS006", "존재하지 않는 섹션 타입입니다."),
     INVALID_SECTION_CONTENT(400, "RS007", "존재하지 않는 섹션 콘텐츠입니다."),
+    INVALID_RESUME_TITLE(400, "RS008", "이력서 제목이 유효하지 않습니다."),
+    INVALID_RESUME_SECTION(400, "RS009", "이력서 섹션 정보가 유효하지 않습니다."),
+
+    //Link
+    INVALID_URL(400, "L001", "URL must start with http:// or https://"),
+
     ;
 
     private final int status;

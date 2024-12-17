@@ -1,5 +1,6 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidUrlException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -28,10 +29,17 @@ public class Link extends BaseTimeEntity {
     @Builder
     public Link(String title, String url) {
         this.title = title;
+        validateUrl(url);
         this.url = url;
     }
 
     void setBasicInfo(BasicInfo basicInfo) {
         this.basicInfo = basicInfo;
+    }
+
+    private void validateUrl(String url) {
+        if (url == null || !url.matches("^https?://.*")) {
+            throw new InvalidUrlException();
+        }
     }
 }

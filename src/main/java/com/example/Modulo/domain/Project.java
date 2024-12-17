@@ -1,5 +1,7 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidProjectDateException;
+import com.example.Modulo.exception.InvalidProjectFieldException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import com.example.Modulo.global.converter.YearMonthConverter;
 import jakarta.persistence.*;
@@ -35,7 +37,7 @@ public class Project extends BaseTimeEntity {
     @Column(nullable = false)
     private String projectName;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String shortDescription;
 
     @ElementCollection
@@ -52,12 +54,14 @@ public class Project extends BaseTimeEntity {
     public Project(Member member, YearMonth startDate, YearMonth endDate, String projectName,
                    String shortDescription, List<String> techStack, String teamComposition,
                    String detailedDescription) {
+        validateDate(startDate, endDate);
+        validateFields(projectName, shortDescription, techStack, teamComposition, detailedDescription);
         this.member = member;
         this.startDate = startDate;
         this.endDate = endDate;
         this.projectName = projectName;
         this.shortDescription = shortDescription;
-        this.techStack = techStack;
+        this.techStack = new ArrayList<>(techStack);
         this.teamComposition = teamComposition;
         this.detailedDescription = detailedDescription;
     }
@@ -65,12 +69,32 @@ public class Project extends BaseTimeEntity {
     public void update(YearMonth startDate, YearMonth endDate, String projectName,
                        String shortDescription, List<String> techStack, String teamComposition,
                        String detailedDescription) {
+        validateDate(startDate, endDate);
+        validateFields(projectName, shortDescription, techStack, teamComposition, detailedDescription);
         this.startDate = startDate;
         this.endDate = endDate;
         this.projectName = projectName;
         this.shortDescription = shortDescription;
-        this.techStack = techStack;
+        this.techStack = new ArrayList<>(techStack);
         this.teamComposition = teamComposition;
         this.detailedDescription = detailedDescription;
+    }
+
+    private void validateDate(YearMonth startDate, YearMonth endDate) {
+        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            throw new InvalidProjectDateException();
+        }
+    }
+
+    private void validateFields(String projectName, String shortDescription,
+                                List<String> techStack, String teamComposition,
+                                String detailedDescription) {
+        if (projectName == null || projectName.trim().isEmpty() ||
+                shortDescription == null || shortDescription.trim().isEmpty() ||
+                techStack == null || techStack.isEmpty() ||
+                teamComposition == null || teamComposition.trim().isEmpty() ||
+                detailedDescription == null || detailedDescription.trim().isEmpty()) {
+            throw new InvalidProjectFieldException();
+        }
     }
 }

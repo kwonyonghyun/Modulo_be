@@ -1,5 +1,6 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidSectionContentException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -30,6 +31,7 @@ public class SectionContent extends BaseTimeEntity {
 
     @Builder
     public SectionContent(ResumeSection resumeSection, Integer orderIndex, Integer topMargin, Long contentId) {
+        validateFields(orderIndex, topMargin, contentId);
         this.resumeSection = resumeSection;
         this.orderIndex = orderIndex;
         this.topMargin = topMargin;
@@ -41,7 +43,16 @@ public class SectionContent extends BaseTimeEntity {
     }
 
     public void update(Integer orderIndex, Integer topMargin) {
+        validateFields(orderIndex, topMargin, this.contentId);
         this.orderIndex = orderIndex;
         this.topMargin = topMargin;
+    }
+
+    private void validateFields(Integer orderIndex, Integer topMargin, Long contentId) {
+        if (orderIndex == null || orderIndex < 0 ||
+                topMargin == null || topMargin < 0 ||
+                contentId == null) {
+            throw new InvalidSectionContentException();
+        }
     }
 }

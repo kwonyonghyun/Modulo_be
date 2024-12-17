@@ -1,5 +1,7 @@
 package com.example.Modulo.domain;
 
+import com.example.Modulo.exception.InvalidEducationDateException;
+import com.example.Modulo.exception.InvalidEducationFieldException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import com.example.Modulo.global.converter.YearMonthConverter;
 import com.example.Modulo.global.enums.EducationLevel;
@@ -34,7 +36,6 @@ public class Education extends BaseTimeEntity {
     @Column(nullable = false)
     private String school;
 
-    @Column(nullable = false)
     private String major;
 
     @Enumerated(EnumType.STRING)
@@ -44,6 +45,8 @@ public class Education extends BaseTimeEntity {
     @Builder
     public Education(Member member, YearMonth startDate, YearMonth endDate, String school,
                      String major, EducationLevel educationLevel) {
+        validateDate(startDate, endDate);
+        validateFields(school, educationLevel);
         this.member = member;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -54,10 +57,24 @@ public class Education extends BaseTimeEntity {
 
     public void update(YearMonth startDate, YearMonth endDate, String school,
                        String major, EducationLevel educationLevel){
+        validateDate(startDate, endDate);
+        validateFields(school, educationLevel);
         this.startDate = startDate;
         this.endDate = endDate;
         this.school = school;
         this.major = major;
         this.educationLevel = educationLevel;
+    }
+
+    private void validateDate(YearMonth startDate, YearMonth endDate) {
+        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            throw new InvalidEducationDateException();
+        }
+    }
+
+    private void validateFields(String school, EducationLevel educationLevel) {
+        if (school == null || school.trim().isEmpty() || educationLevel == null) {
+            throw new InvalidEducationFieldException();
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.example.Modulo.service;
 import com.example.Modulo.domain.Member;
 import com.example.Modulo.dto.request.UpdateNicknameRequest;
 import com.example.Modulo.dto.response.MemberResponse;
+import com.example.Modulo.exception.MemberNotFoundException;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,14 +17,14 @@ public class MemberService {
 
     public MemberResponse getMember(Long memberId) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(MemberNotFoundException::new);
         return MemberResponse.from(member);
     }
 
     @Transactional
     public MemberResponse updateNickname(Long memberId, UpdateNicknameRequest request) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(MemberNotFoundException::new);
         member.updateNickname(request.getNickname());
         return MemberResponse.from(member);
     }
