@@ -42,3 +42,12 @@ cloud:
       static: ${AWS_REGION}
     stack:
       auto: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, info, metrics
+  endpoint:
+    health:
+      show-details: always
