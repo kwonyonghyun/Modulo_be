@@ -98,7 +98,9 @@ class ProjectServiceTest {
         setFieldValue(updateRequest, "techStack", Arrays.asList("Java", "Spring", "React"));
         setFieldValue(updateRequest, "teamComposition", "백엔드 3명, 프론트엔드 3명");
         setFieldValue(updateRequest, "detailedDescription", "수정된 상세 설명");
+    }
 
+    private void setupAuthentication() {
         SecurityContextHolder.setContext(securityContext);
         given(securityContext.getAuthentication()).willReturn(authentication);
         given(authentication.getName()).willReturn("1");
@@ -114,6 +116,7 @@ class ProjectServiceTest {
     @DisplayName("프로젝트 생성 성공")
     void createProject_Success() {
         // given
+        setupAuthentication();
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(projectRepository.save(any(Project.class))).willReturn(project);
 
@@ -126,9 +129,25 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("프로젝트 단건 조회 성공")
+    void getMyProject_Success() {
+        //given
+        given(projectRepository.findById(1L)).willReturn(Optional.of(project));
+        setupAuthentication();
+
+        //when
+        ProjectResponse result = projectService.getProjectById(1L);
+
+        //then
+        assertThat(result.getProjectName()).isEqualTo(project.getProjectName());
+        assertThat(result.getId()).isEqualTo(project.getId());
+    }
+
+    @Test
     @DisplayName("내 프로젝트 목록 조회 성공")
     void getMyProjects_Success() {
         // given
+        setupAuthentication();
         given(projectRepository.findAllByMemberId(1L)).willReturn(List.of(project));
 
         // when
@@ -144,6 +163,7 @@ class ProjectServiceTest {
     @DisplayName("프로젝트 수정 성공")
     void updateProject_Success() {
         // given
+        setupAuthentication();
         given(projectRepository.findById(1L)).willReturn(Optional.of(project));
 
         // when
@@ -158,6 +178,7 @@ class ProjectServiceTest {
     @DisplayName("프로젝트 삭제 성공")
     void deleteProject_Success() {
         // given
+        setupAuthentication();
         given(projectRepository.findById(1L)).willReturn(Optional.of(project));
 
         // when
@@ -171,6 +192,7 @@ class ProjectServiceTest {
     @DisplayName("존재하지 않는 프로젝트 수정 시 예외 발생")
     void updateProject_NotFound() {
         // given
+        setupAuthentication();
         given(projectRepository.findById(1L)).willReturn(Optional.empty());
 
         // when & then
@@ -182,6 +204,7 @@ class ProjectServiceTest {
     @DisplayName("권한 없는 프로젝트 수정 시 예외 발생")
     void updateProject_Unauthorized() throws Exception {
         // given
+        setupAuthentication();
         Member otherMember = Member.builder()
                 .email("other@test.com")
                 .name("다른사용자")

@@ -124,6 +124,20 @@ class SelfIntroductionServiceTest {
     }
 
     @Test
+    @DisplayName("내 자기소개서 단건 조회 성공")
+    void getMySelfIntroductions_NotFound() {
+        //given
+        given(selfIntroductionRepository.findById(1L)).willReturn(Optional.of(selfIntroduction));
+
+        //when
+        SelfIntroductionResponse result = selfIntroductionService.getIntroductionById(1L);
+
+        //then
+        assertThat(result.getContent()).isEqualTo(selfIntroduction.getContent());
+        assertThat(result.getTitle()).isEqualTo(selfIntroduction.getTitle());
+    }
+
+    @Test
     @DisplayName("자기소개서 수정 성공")
     void updateSelfIntroduction_Success() {
         // given

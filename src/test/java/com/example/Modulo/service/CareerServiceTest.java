@@ -142,6 +142,22 @@ class CareerServiceTest {
     }
 
     @Test
+    @DisplayName("경력 정보 단건 조회 성공")
+    void getCareerById_Success() {
+        // given
+        given(careerRepository.findById(1L)).willReturn(Optional.of(career));
+
+        // when
+        CareerResponse result = careerService.getCareerById(1L);
+
+        // then
+        assertThat(result.getCompanyName()).isEqualTo(career.getCompanyName());
+        assertThat(result.getPosition()).isEqualTo(career.getPosition());
+        assertThat(result.getTechStack()).isEqualTo(career.getTechStack());
+        assertThat(result.getId()).isEqualTo(career.getId());
+    }
+
+    @Test
     @DisplayName("경력 정보 수정 성공")
     void updateCareer_Success() {
         // given

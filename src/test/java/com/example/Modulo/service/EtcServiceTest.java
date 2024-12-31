@@ -142,6 +142,23 @@ class EtcServiceTest {
     }
 
     @Test
+    @DisplayName("기타사항 단건 조회 성공")
+    void getEtcById_Success() {
+        // given
+        given(etcRepository.findById(1L)).willReturn(Optional.of(etc));
+
+        // when
+        EtcResponse result = etcService.getEtcById(1L);
+
+        // then
+        assertThat(result.getId()).isEqualTo(etc.getId());
+        assertThat(result.getTitle()).isEqualTo(etc.getTitle());
+        assertThat(result.getType()).isEqualTo(etc.getType());
+        assertThat(result.getOrganization()).isEqualTo(etc.getOrganization());
+        assertThat(result.getScore()).isEqualTo(etc.getScore());
+    }
+
+    @Test
     @DisplayName("기타사항 수정 성공")
     void updateEtc_Success() {
         // given

@@ -134,6 +134,20 @@ class EducationServiceTest {
     }
 
     @Test
+    @DisplayName("내 교육 정보 단건 조회 성공")
+    void getMyEducation_Success() {
+        // given
+        given(educationRepository.findById(1L)).willReturn(Optional.of(education));
+
+        // when
+        EducationResponse result = educationService.getEducationById(1L);
+
+        // then
+        assertThat(result.getEducationLevel()).isEqualTo(EducationLevel.COLLEGE_4);
+        assertThat(result.getSchool()).isEqualTo("테스트대학교");
+    }
+
+    @Test
     @DisplayName("교육 정보 수정 성공")
     void updateEducation_Success() {
         // given
