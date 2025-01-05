@@ -1,17 +1,5 @@
 version: '3.8'
 services:
-  app:
-    build: .
-    container_name: modulo-app-local
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=local
-    depends_on:
-      - redis
-    networks:
-      - modulo-network-local
-
   redis:
     image: redis:latest
     container_name: modulo-redis-local
@@ -23,9 +11,26 @@ services:
     networks:
       - modulo-network-local
 
+  mysql:
+    image: mysql:8.0
+    container_name: modulo-mysql-local
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: modulo-db
+      MYSQL_USER: modulo
+      MYSQL_PASSWORD: modulo1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data_local:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - modulo-network-local
+
 networks:
   modulo-network-local:
     driver: bridge
 
 volumes:
   redis_data_local:
+  mysql_data_local:

@@ -130,6 +130,7 @@ public class ResumeService {
         Long memberId = getCurrentMemberId();
         List<Resume> resumes = resumeRepository.findAllByMemberId(memberId);
         return resumes.stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .map(ResumeResponse::from)
                 .collect(Collectors.toList());
     }
@@ -172,6 +173,7 @@ public class ResumeService {
         return ResumeDetailResponse.builder()
                 .id(resume.getId())
                 .title(resume.getTitle())
+                .createdAt(resume.getCreatedAt())
                 .sections(resume.getSections().stream()
                         .map(section -> {
                             List<Object> contentDetails = section.getContents().stream()
