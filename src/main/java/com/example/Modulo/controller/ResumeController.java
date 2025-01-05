@@ -4,6 +4,7 @@ import com.example.Modulo.dto.request.ResumeCreateRequest;
 import com.example.Modulo.dto.request.ResumeUpdateRequest;
 import com.example.Modulo.dto.response.ResumeDetailResponse;
 import com.example.Modulo.dto.response.ResumeResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.ResumeService;
@@ -16,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/resume")
 @RequiredArgsConstructor
+@TrackUserActivity
 public class ResumeController {
 
     private final ResumeService resumeService;

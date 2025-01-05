@@ -2,6 +2,7 @@ package com.example.Modulo.controller;
 
 import com.example.Modulo.dto.request.UpdateNicknameRequest;
 import com.example.Modulo.dto.response.MemberResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/members")
+@TrackUserActivity
 public class MemberController {
     private final MemberService memberService;
 

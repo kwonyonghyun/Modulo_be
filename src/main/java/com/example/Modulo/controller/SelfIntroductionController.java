@@ -3,6 +3,7 @@ package com.example.Modulo.controller;
 import com.example.Modulo.dto.request.SelfIntroductionCreateRequest;
 import com.example.Modulo.dto.request.SelfIntroductionUpdateRequest;
 import com.example.Modulo.dto.response.SelfIntroductionResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.SelfIntroductionService;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/self-introduction")
 @RequiredArgsConstructor
+@TrackUserActivity
 public class SelfIntroductionController {
 
     private final SelfIntroductionService selfIntroductionService;

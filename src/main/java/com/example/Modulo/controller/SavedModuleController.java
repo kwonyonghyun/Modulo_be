@@ -1,6 +1,7 @@
 package com.example.Modulo.controller;
 
 import com.example.Modulo.dto.response.SavedModuleResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.SavedModuleService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/saved-modules")
+@TrackUserActivity
 public class SavedModuleController{
 
     private final SavedModuleService savedModuleService;

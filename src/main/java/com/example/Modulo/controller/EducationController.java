@@ -3,6 +3,7 @@ package com.example.Modulo.controller;
 import com.example.Modulo.dto.request.EducationCreateRequest;
 import com.example.Modulo.dto.request.EducationUpdateRequest;
 import com.example.Modulo.dto.response.EducationResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.EducationService;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/education")
 @RequiredArgsConstructor
+@TrackUserActivity
 public class EducationController {
 
     private final EducationService educationService;

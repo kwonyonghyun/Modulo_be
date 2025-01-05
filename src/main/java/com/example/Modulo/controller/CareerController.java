@@ -3,6 +3,7 @@ package com.example.Modulo.controller;
 import com.example.Modulo.dto.request.CareerCreateRequest;
 import com.example.Modulo.dto.request.CareerUpdateRequest;
 import com.example.Modulo.dto.response.CareerResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.CareerService;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/career")
 @RequiredArgsConstructor
+@TrackUserActivity
 public class CareerController {
 
     private final CareerService careerService;

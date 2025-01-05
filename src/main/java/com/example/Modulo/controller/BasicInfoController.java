@@ -3,6 +3,7 @@ package com.example.Modulo.controller;
 import com.example.Modulo.dto.request.BasicInfoCreateRequest;
 import com.example.Modulo.dto.request.BasicInfoUpdateRequest;
 import com.example.Modulo.dto.response.BasicInfoResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.BasicInfoService;
@@ -17,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/basic-info")
 @RequiredArgsConstructor
+@TrackUserActivity
 public class BasicInfoController {
     private final BasicInfoService basicInfoService;
 

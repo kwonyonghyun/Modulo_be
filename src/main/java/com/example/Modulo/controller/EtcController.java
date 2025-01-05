@@ -3,6 +3,7 @@ package com.example.Modulo.controller;
 import com.example.Modulo.dto.request.EtcCreateRequest;
 import com.example.Modulo.dto.request.EtcUpdateRequest;
 import com.example.Modulo.dto.response.EtcResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.EtcService;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/etc")
 @RequiredArgsConstructor
+@TrackUserActivity
 public class EtcController {
 
     private final EtcService etcService;

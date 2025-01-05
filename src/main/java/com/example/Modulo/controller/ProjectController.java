@@ -3,6 +3,7 @@ package com.example.Modulo.controller;
 import com.example.Modulo.dto.request.ProjectCreateRequest;
 import com.example.Modulo.dto.request.ProjectUpdateRequest;
 import com.example.Modulo.dto.response.ProjectResponse;
+import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.ProjectService;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/project")
 @RequiredArgsConstructor
+@TrackUserActivity
 public class ProjectController {
 
     private final ProjectService projectService;
