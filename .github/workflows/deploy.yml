@@ -1,13 +1,15 @@
-name: Deploy to EC2
+name: Deploy to Production EC2
 
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 env:
   DOCKER_IMAGE: kwonyonghyun/modulo
-  DOCKER_CONTAINER: modulo-app-dev
+  DOCKER_CONTAINER: modulo-app-prod
 
 jobs:
   deploy:
@@ -43,44 +45,36 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:latest
+            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
 
-      - name: Create .env.dev file
+      - name: Create .env.prod file
         run: |
-          echo "IMAGE_TAG=${{ github.sha }}" > .env.dev
-          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env.dev
-          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env.dev
-          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env.dev
-          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env.dev
-          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env.dev
-          echo "SPRING_REDIS_HOST=${{ secrets.SPRING_REDIS_HOST }}" >> .env.dev
-          echo "SPRING_REDIS_PORT=${{ secrets.SPRING_REDIS_PORT }}" >> .env.dev
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.dev
-          echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env.dev
-          echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env.dev
-          echo "AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}" >> .env.dev
-          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env.dev
-          echo "SWAGGER_USERNAME=${{ secrets.SWAGGER_USERNAME }}" >> .env.dev
-          echo "SWAGGER_PASSWORD=${{ secrets.SWAGGER_PASSWORD }}" >> .env.dev
-          echo "CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}" >> .env.dev
+          echo "IMAGE_TAG=${{ github.sha }}" > .env.prod
+          echo "SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }}" >> .env.prod
+          echo "SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }}" >> .env.prod
+          echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}" >> .env.prod
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env.prod
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env.prod
+          echo "SPRING_REDIS_HOST=${{ secrets.SPRING_REDIS_HOST }}" >> .env.prod
+          echo "SPRING_REDIS_PORT=${{ secrets.SPRING_REDIS_PORT }}" >> .env.prod
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.prod
+          echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env.prod
+          echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env.prod
+          echo "AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}" >> .env.prod
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env.prod
+          echo "SWAGGER_USERNAME=${{ secrets.SWAGGER_USERNAME }}" >> .env.prod
+          echo "SWAGGER_PASSWORD=${{ secrets.SWAGGER_PASSWORD }}" >> .env.prod
+          echo "CORS_ALLOWED_ORIGINS=${{ secrets.CORS_ALLOWED_ORIGINS }}" >> .env.prod
 
-
-      - name: Copy .env.dev file to EC2
+      - name: Copy files to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: ".env.dev"
-          target: "~/"
-
-      - name: Copy docker-compose.dev.yml file to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker-compose.dev.yml"
+          source: ".env.prod,docker-compose.prod.yml"
           target: "~/"
 
       - name: Deploy to EC2
@@ -90,9 +84,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker-compose -f docker-compose.dev.yml --env-file .env.dev down || true
-            docker-compose -f docker-compose.dev.yml --env-file .env.dev pull
-            docker-compose -f docker-compose.dev.yml --env-file .env.dev up -d
-            docker ps
-            docker logs modulo-app-dev
-            docker image prune -f
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod down || true
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod pull
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+            docker system prune -af
