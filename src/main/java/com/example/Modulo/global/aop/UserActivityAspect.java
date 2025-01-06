@@ -31,8 +31,11 @@ public class UserActivityAspect {
     }
 
     private void recordUserActivity() {
-        String key = DAU_KEY_PREFIX + LocalDate.now().toString();
-        Long memberId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
-        redisTemplate.opsForSet().add(key, memberId.toString());
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!"anonymousUser".equals(username)) {
+            String key = DAU_KEY_PREFIX + LocalDate.now().toString();
+            Long memberId = Long.parseLong(username);
+            redisTemplate.opsForSet().add(key, memberId.toString());
+        }
     }
 }
