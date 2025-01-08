@@ -100,16 +100,16 @@ class ProjectServiceTest {
         setFieldValue(updateRequest, "detailedDescription", "수정된 상세 설명");
     }
 
-    private void setupAuthentication() {
-        SecurityContextHolder.setContext(securityContext);
-        given(securityContext.getAuthentication()).willReturn(authentication);
-        given(authentication.getName()).willReturn("1");
-    }
-
     private void setFieldValue(Object object, String fieldName, Object value) throws Exception {
         Field field = object.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(object, value);
+    }
+
+    private void setupAuthentication() {
+        SecurityContextHolder.setContext(securityContext);
+        given(securityContext.getAuthentication()).willReturn(authentication);
+        given(authentication.getName()).willReturn("1");
     }
 
     @Test
@@ -126,14 +126,15 @@ class ProjectServiceTest {
         // then
         assertThat(projectId).isEqualTo(1L);
         verify(projectRepository).save(any(Project.class));
+        verify(authentication).getName();
     }
 
     @Test
     @DisplayName("프로젝트 단건 조회 성공")
     void getMyProject_Success() {
         //given
-        given(projectRepository.findById(1L)).willReturn(Optional.of(project));
         setupAuthentication();
+        given(projectRepository.findById(1L)).willReturn(Optional.of(project));
 
         //when
         ProjectResponse result = projectService.getProjectById(1L);
@@ -141,6 +142,7 @@ class ProjectServiceTest {
         //then
         assertThat(result.getProjectName()).isEqualTo(project.getProjectName());
         assertThat(result.getId()).isEqualTo(project.getId());
+        verify(authentication).getName();
     }
 
     @Test
@@ -157,6 +159,7 @@ class ProjectServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getId()).isEqualTo(project.getId());
         assertThat(result.get(0).getProjectName()).isEqualTo(project.getProjectName());
+        verify(authentication).getName();
     }
 
     @Test
@@ -172,6 +175,7 @@ class ProjectServiceTest {
         // then
         assertThat(project.getProjectName()).isEqualTo(updateRequest.getProjectName());
         assertThat(project.getShortDescription()).isEqualTo(updateRequest.getShortDescription());
+        verify(authentication).getName();
     }
 
     @Test
@@ -186,13 +190,13 @@ class ProjectServiceTest {
 
         // then
         verify(projectRepository).delete(project);
+        verify(authentication).getName();
     }
 
     @Test
     @DisplayName("존재하지 않는 프로젝트 수정 시 예외 발생")
     void updateProject_NotFound() {
         // given
-        setupAuthentication();
         given(projectRepository.findById(1L)).willReturn(Optional.empty());
 
         // when & then
@@ -234,5 +238,6 @@ class ProjectServiceTest {
         // when & then
         assertThatThrownBy(() -> projectService.updateProject(1L, updateRequest))
                 .isInstanceOf(UnauthorizedAccessException.class);
+        verify(authentication).getName();
     }
 }

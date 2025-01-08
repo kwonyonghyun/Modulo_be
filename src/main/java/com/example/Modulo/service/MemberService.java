@@ -4,6 +4,7 @@ import com.example.Modulo.domain.Member;
 import com.example.Modulo.dto.request.UpdateNicknameRequest;
 import com.example.Modulo.dto.response.MemberResponse;
 import com.example.Modulo.exception.MemberNotFoundException;
+import com.example.Modulo.exception.UnauthorizedAccessException;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,9 @@ public class MemberService {
     public MemberResponse updateNickname(Long memberId, UpdateNicknameRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(MemberNotFoundException::new);
+        if(!member.getId().equals(memberId)){
+            throw new UnauthorizedAccessException();
+        }
         member.updateNickname(request.getNickname());
         return MemberResponse.from(member);
     }

@@ -72,14 +72,22 @@ public class BasicInfoService {
         return basicInfoRepository.save(basicInfo).getId();
     }
 
-    @Transactional
-    public void updateBasicInfo(Long id, BasicInfoUpdateRequest request, MultipartFile profileImage) {
-        Long memberId = getCurrentMemberId();
-        BasicInfo basicInfo = getBasicInfo(id);
+    private BasicInfo findBasicInfoById(Long id) {
+        return basicInfoRepository.findById(id)
+                .orElseThrow(BasicInfoNotFoundException::new);
+    }
 
-        if (!basicInfo.getMember().getId().equals(memberId)) {
+    private void validateMemberAccess(BasicInfo basicInfo) {
+        Long currentMemberId = getCurrentMemberId();
+        if (!basicInfo.getMember().getId().equals(currentMemberId)) {
             throw new BasicInfoUnauthorizedException();
         }
+    }
+
+    @Transactional
+    public void updateBasicInfo(Long id, BasicInfoUpdateRequest request, MultipartFile profileImage) {
+        BasicInfo basicInfo = findBasicInfoById(id);
+        validateMemberAccess(basicInfo);
 
         String profileImageUrl = basicInfo.getProfileImageUrl();
         if (profileImage != null && !profileImage.isEmpty()) {
@@ -111,20 +119,10 @@ public class BasicInfoService {
         basicInfo.updateTechStack(request.getTechStack());
     }
 
-    private BasicInfo getBasicInfo(Long id) {
-        BasicInfo basicInfo = basicInfoRepository.findById(id)
-                .orElseThrow(BasicInfoNotFoundException::new);
-        return basicInfo;
-    }
-
     @Transactional
     public void deleteBasicInfo(Long id) {
-        Long memberId = getCurrentMemberId();
-        BasicInfo basicInfo = getBasicInfo(id);
-
-        if (!basicInfo.getMember().getId().equals(memberId)) {
-            throw new BasicInfoUnauthorizedException();
-        }
+        BasicInfo basicInfo = findBasicInfoById(id);
+        validateMemberAccess(basicInfo);
 
         if (basicInfo.getProfileImageUrl() != null) {
             s3Service.deleteFile(basicInfo.getProfileImageUrl());
@@ -141,7 +139,8 @@ public class BasicInfoService {
     }
 
     public BasicInfoResponse getBasicInfoById(Long id) {
-        BasicInfo basicInfo = getBasicInfo(id);
+        BasicInfo basicInfo = findBasicInfoById(id);
+        validateMemberAccess(basicInfo);
         return BasicInfoResponse.from(basicInfo);
     }
 }

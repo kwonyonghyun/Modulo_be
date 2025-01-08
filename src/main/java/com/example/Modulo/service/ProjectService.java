@@ -60,10 +60,8 @@ public class ProjectService {
 
     @Transactional
     public void updateProject(Long projectId, ProjectUpdateRequest request) {
-        Long memberId = getCurrentMemberId();
-        Project project = getProject(projectId);
-
-        validateMemberAccess(project, memberId);
+        Project project = findProjectById(projectId);
+        validateMemberAccess(project);
 
         project.update(
                 request.getStartDate(),
@@ -78,31 +76,27 @@ public class ProjectService {
 
     @Transactional
     public void deleteProject(Long projectId) {
-        Long memberId = getCurrentMemberId();
-        Project project = getProject(projectId);
-
-        validateMemberAccess(project, memberId);
+        Project project = findProjectById(projectId);
+        validateMemberAccess(project);
 
         projectRepository.delete(project);
     }
 
     public ProjectResponse getProjectById(Long projectId) {
-        Long memberId = getCurrentMemberId();
-        Project project = getProject(projectId);
-
-        validateMemberAccess(project, memberId);
+        Project project = findProjectById(projectId);
+        validateMemberAccess(project);
 
         return ProjectResponse.from(project);
     }
 
-    private Project getProject(Long projectId) {
-        Project project = projectRepository.findById(projectId)
+    private Project findProjectById(Long projectId) {
+        return projectRepository.findById(projectId)
                 .orElseThrow(ProjectNotFoundException::new);
-        return project;
     }
 
-    private void validateMemberAccess(Project project, Long memberId) {
-        if (!project.getMember().getId().equals(memberId)) {
+    private void validateMemberAccess(Project project) {
+        Long currentMemberId = getCurrentMemberId();
+        if (!project.getMember().getId().equals(currentMemberId)) {
             throw new UnauthorizedAccessException();
         }
     }
