@@ -40,7 +40,7 @@ public class Project extends BaseTimeEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String shortDescription;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "project_tech_stack", joinColumns = @JoinColumn(name = "project_id"))
     private List<String> techStack = new ArrayList<>();
 

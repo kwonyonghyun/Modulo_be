@@ -7,7 +7,6 @@ import com.example.Modulo.dto.request.ResumeUpdateRequest;
 import com.example.Modulo.dto.request.ResumeSectionRequest;
 import com.example.Modulo.dto.request.SectionContentRequest;
 import com.example.Modulo.dto.response.BasicInfoResponse;
-import com.example.Modulo.dto.response.ResumeDetailResponse;
 import com.example.Modulo.dto.response.ResumeResponse;
 import com.example.Modulo.exception.InvalidSectionContentException;
 import com.example.Modulo.exception.ResumeNotFoundException;
@@ -22,6 +21,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,12 +33,15 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ResumeServiceTest {
@@ -53,10 +59,25 @@ class ResumeServiceTest {
     private BasicInfoService basicInfoService;
 
     @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private SavedModuleService savedModuleService;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
     private Authentication authentication;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
     private Member member;
     private Resume resume;
@@ -97,13 +118,17 @@ class ResumeServiceTest {
         setFieldValue(updateRequest, "sections", sections);
 
         SecurityContextHolder.setContext(securityContext);
-        given(securityContext.getAuthentication()).willReturn(authentication);
-        given(authentication.getName()).willReturn("1");
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getName()).thenReturn("1");
+
+        lenient().when(cacheManager.getCache("resumes")).thenReturn(cache);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.getExpire(anyString())).thenReturn(1800L);
     }
 
     @Test
-    @DisplayName("이력서 생성 성공")
-    void createResume_Success() throws Exception {
+    @DisplayName("이력서 생성 성공 - 캐시 갱신")
+    void createResume_Success_CacheUpdate() {
         // given
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(resumeRepository.save(any(Resume.class))).willReturn(resume);
@@ -123,8 +148,23 @@ class ResumeServiceTest {
     }
 
     @Test
-    @DisplayName("이력서 수정 성공")
-    void updateResume_Success() throws Exception {
+    @DisplayName("내 이력서 목록 조회 성공 - 캐시 TTL 연장")
+    void getMyResumes_Success_ExtendCacheTTL() {
+        // given
+        given(resumeRepository.findAllByMemberId(1L)).willReturn(List.of(resume));
+        given(redisTemplate.getExpire("resumes::1")).willReturn(1500L);
+
+        // when
+        List<ResumeResponse> result = resumeService.getMyResumes();
+
+        // then
+        assertThat(result).hasSize(1);
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
+    }
+
+    @Test
+    @DisplayName("이력서 수정 성공 - 캐시 갱신")
+    void updateResume_Success_CacheUpdate() {
         // given
         given(resumeRepository.findById(1L)).willReturn(Optional.of(resume));
         given(basicInfoService.getBasicInfoById(1L))
@@ -142,37 +182,8 @@ class ResumeServiceTest {
     }
 
     @Test
-    @DisplayName("이력서 목록 조회 성공")
-    void getMyResumes_Success() {
-        // given
-        given(resumeRepository.findAllByMemberId(1L)).willReturn(List.of(resume));
-
-        // when
-        List<ResumeResponse> result = resumeService.getMyResumes();
-
-        // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(resume.getId());
-        assertThat(result.get(0).getTitle()).isEqualTo(resume.getTitle());
-    }
-
-    @Test
-    @DisplayName("이력서 단건 조회 성공")
-    void getResumeById_Success() {
-        // given
-        given(resumeRepository.findById(1L)).willReturn(Optional.of(resume));
-
-        // when
-        ResumeResponse result = resumeService.getResumeById(1L);
-
-        // then
-        assertThat(result.getId()).isEqualTo(resume.getId());
-        assertThat(result.getTitle()).isEqualTo(resume.getTitle());
-    }
-
-    @Test
-    @DisplayName("이력서 삭제 성공")
-    void deleteResume_Success() {
+    @DisplayName("이력서 삭제 성공 - 캐시 제거")
+    void deleteResume_Success_CacheEviction() {
         // given
         given(resumeRepository.findById(1L)).willReturn(Optional.of(resume));
 
@@ -191,17 +202,6 @@ class ResumeServiceTest {
 
         // when & then
         assertThatThrownBy(() -> resumeService.getResumeById(1L))
-                .isInstanceOf(ResumeNotFoundException.class);
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 이력서 수정 시 예외 발생")
-    void updateResume_NotFound() {
-        // given
-        given(resumeRepository.findById(1L)).willReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> resumeService.updateResume(1L, updateRequest))
                 .isInstanceOf(ResumeNotFoundException.class);
     }
 

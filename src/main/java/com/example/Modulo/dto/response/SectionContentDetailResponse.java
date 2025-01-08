@@ -3,12 +3,18 @@ package com.example.Modulo.dto.response;
 import com.example.Modulo.domain.SectionContent;
 import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.service.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 
 @Getter
 @Builder
-public class SectionContentDetailResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class SectionContentDetailResponse implements Serializable {
     private Long id;
     private Integer orderIndex;
     private Integer topMargin;

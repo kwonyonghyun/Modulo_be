@@ -3,15 +3,21 @@ package com.example.Modulo.dto.response;
 import com.example.Modulo.domain.BasicInfo;
 import com.example.Modulo.domain.Link;
 import com.example.Modulo.global.enums.CareerYear;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Getter
 @Builder
-public class BasicInfoResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class BasicInfoResponse implements Serializable {
     private Long id;
     private String profileImageUrl;
     private String name;
@@ -25,6 +31,8 @@ public class BasicInfoResponse {
 
     @Getter
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class LinkResponse {
         private Long id;
         private String title;
@@ -52,7 +60,7 @@ public class BasicInfoResponse {
                 .links(basicInfo.getLinks().stream()
                         .map(LinkResponse::from)
                         .collect(Collectors.toList()))
-                .techStack(basicInfo.getTechStack())
+                .techStack(new ArrayList<>(basicInfo.getTechStack()))
                 .build();
     }
 }

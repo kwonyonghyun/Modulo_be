@@ -40,7 +40,6 @@ class MemberServiceTest {
                 .name("테스터")
                 .build();
 
-        // id 설정
         Field memberIdField = member.getClass().getDeclaredField("id");
         memberIdField.setAccessible(true);
         memberIdField.set(member, 1L);

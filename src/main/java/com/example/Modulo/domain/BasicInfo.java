@@ -47,7 +47,7 @@ public class BasicInfo extends BaseTimeEntity {
     @OneToMany(mappedBy = "basicInfo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Link> links = new ArrayList<>();
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "basic_info_tech_stack", joinColumns = @JoinColumn(name = "basic_info_id"))
     private List<String> techStack = new ArrayList<>();
 

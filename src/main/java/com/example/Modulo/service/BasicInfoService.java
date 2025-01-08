@@ -13,23 +13,36 @@ import com.example.Modulo.global.service.S3Service;
 import com.example.Modulo.repository.BasicInfoRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BasicInfoService {
+    private static final String CACHE_NAME = "basicInfo";
     private static final String PROFILE_IMAGE_DIRECTORY = "profile-images";
+    private static final long EXTEND_TTL_THRESHOLD = 30 * 60;
+    private static final long EXTEND_TTL_DURATION = 60 * 60;
 
     private final BasicInfoRepository basicInfoRepository;
     private final MemberRepository memberRepository;
     private final S3Service s3Service;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private Long getCurrentMemberId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -69,22 +82,33 @@ public class BasicInfoService {
         basicInfo.updateLinks(links);
         basicInfo.updateTechStack(request.getTechStack());
 
-        return basicInfoRepository.save(basicInfo).getId();
+        Long basicInfoId = basicInfoRepository.save(basicInfo).getId();
+
+        String cacheKey = CACHE_NAME + "::basicInfo:" + basicInfoId;
+        BasicInfoResponse response = BasicInfoResponse.from(basicInfo);
+        redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+
+        evictRelatedCaches();
+        return basicInfoId;
     }
 
-    private BasicInfo findBasicInfoById(Long id) {
-        return basicInfoRepository.findById(id)
-                .orElseThrow(BasicInfoNotFoundException::new);
-    }
+    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    public List<BasicInfoResponse> getMyBasicInfos() {
+        String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String cacheKey = CACHE_NAME + "::member:" + memberId;
 
-    private void validateMemberAccess(BasicInfo basicInfo) {
-        Long currentMemberId = getCurrentMemberId();
-        if (!basicInfo.getMember().getId().equals(currentMemberId)) {
-            throw new BasicInfoUnauthorizedException();
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
         }
+
+        return basicInfoRepository.findAllByMemberId(Long.parseLong(memberId)).stream()
+                .map(BasicInfoResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateBasicInfo(Long id, BasicInfoUpdateRequest request, MultipartFile profileImage) {
         BasicInfo basicInfo = findBasicInfoById(id);
         validateMemberAccess(basicInfo);
@@ -117,9 +141,12 @@ public class BasicInfoService {
         );
         basicInfo.updateLinks(links);
         basicInfo.updateTechStack(request.getTechStack());
+
+        evictRelatedCaches();
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteBasicInfo(Long id) {
         BasicInfo basicInfo = findBasicInfoById(id);
         validateMemberAccess(basicInfo);
@@ -129,18 +156,38 @@ public class BasicInfoService {
         }
 
         basicInfoRepository.delete(basicInfo);
+        evictRelatedCaches();
     }
 
-    public List<BasicInfoResponse> getMyBasicInfos() {
-        Long memberId = getCurrentMemberId();
-        return basicInfoRepository.findAllByMemberId(memberId).stream()
-                .map(BasicInfoResponse::from)
-                .collect(Collectors.toList());
-    }
-
+    @Cacheable(value = CACHE_NAME, key = "'basicInfo:' + #id")
     public BasicInfoResponse getBasicInfoById(Long id) {
+        String cacheKey = CACHE_NAME + "::basicInfo:" + id;
+
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+        }
+
         BasicInfo basicInfo = findBasicInfoById(id);
         validateMemberAccess(basicInfo);
         return BasicInfoResponse.from(basicInfo);
+    }
+
+    private BasicInfo findBasicInfoById(Long id) {
+        return basicInfoRepository.findById(id)
+                .orElseThrow(BasicInfoNotFoundException::new);
+    }
+
+    private void validateMemberAccess(BasicInfo basicInfo) {
+        if (!basicInfo.getMember().getId().equals(getCurrentMemberId())) {
+            throw new BasicInfoUnauthorizedException();
+        }
+    }
+
+    private void evictRelatedCaches() {
+        String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
+        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
+        redisTemplate.delete("savedModules::member:" + memberId);
+        redisTemplate.delete("resumes::member:" + memberId);
     }
 }

@@ -30,8 +30,8 @@ public class JwtTokenProvider {
             @Value("${jwt.token-validity-in-seconds}") long tokenValidityInSeconds,
             ObjectMapper objectMapper) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
-        this.tokenValidityInMilliseconds = tokenValidityInSeconds * 1000;
-        this.refreshTokenValidityInMilliseconds = tokenValidityInSeconds * 1000 * 3;
+        this.tokenValidityInMilliseconds = tokenValidityInSeconds * 30 * 60 * 1000;
+        this.refreshTokenValidityInMilliseconds = tokenValidityInSeconds * 14 * 24 * 60 * 60 * 1000;
         this.objectMapper = objectMapper;
     }
 

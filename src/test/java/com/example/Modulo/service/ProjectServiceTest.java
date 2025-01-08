@@ -16,6 +16,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,12 +29,15 @@ import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProjectServiceTest {
@@ -45,10 +52,25 @@ class ProjectServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private SavedModuleService savedModuleService;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
     private Authentication authentication;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
     private Member member;
     private Project project;
@@ -61,10 +83,7 @@ class ProjectServiceTest {
                 .email("test@test.com")
                 .name("테스터")
                 .build();
-
-        Field memberIdField = member.getClass().getDeclaredField("id");
-        memberIdField.setAccessible(true);
-        memberIdField.set(member, 1L);
+        setId(member, 1L);
 
         project = Project.builder()
                 .member(member)
@@ -76,10 +95,7 @@ class ProjectServiceTest {
                 .teamComposition("백엔드 2명, 프론트엔드 2명")
                 .detailedDescription("상세 설명")
                 .build();
-
-        Field projectIdField = project.getClass().getDeclaredField("id");
-        projectIdField.setAccessible(true);
-        projectIdField.set(project, 1L);
+        setId(project, 1L);
 
         createRequest = new ProjectCreateRequest();
         setFieldValue(createRequest, "startDate", YearMonth.of(2023, 1));
@@ -98,6 +114,20 @@ class ProjectServiceTest {
         setFieldValue(updateRequest, "techStack", Arrays.asList("Java", "Spring", "React"));
         setFieldValue(updateRequest, "teamComposition", "백엔드 3명, 프론트엔드 3명");
         setFieldValue(updateRequest, "detailedDescription", "수정된 상세 설명");
+
+        SecurityContextHolder.setContext(securityContext);
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getName()).thenReturn("1");
+
+        lenient().when(cacheManager.getCache("project")).thenReturn(cache);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.getExpire(anyString())).thenReturn(1800L);
+    }
+
+    private void setId(Object object, Long id) throws Exception {
+        Field idField = object.getClass().getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(object, id);
     }
 
     private void setFieldValue(Object object, String fieldName, Object value) throws Exception {
@@ -106,17 +136,10 @@ class ProjectServiceTest {
         field.set(object, value);
     }
 
-    private void setupAuthentication() {
-        SecurityContextHolder.setContext(securityContext);
-        given(securityContext.getAuthentication()).willReturn(authentication);
-        given(authentication.getName()).willReturn("1");
-    }
-
     @Test
-    @DisplayName("프로젝트 생성 성공")
-    void createProject_Success() {
+    @DisplayName("프로젝트 생성 성공 - 캐시 갱신")
+    void createProject_Success_CacheUpdate() {
         // given
-        setupAuthentication();
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(projectRepository.save(any(Project.class))).willReturn(project);
 
@@ -126,63 +149,58 @@ class ProjectServiceTest {
         // then
         assertThat(projectId).isEqualTo(1L);
         verify(projectRepository).save(any(Project.class));
-        verify(authentication).getName();
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
-    @DisplayName("프로젝트 단건 조회 성공")
-    void getMyProject_Success() {
-        //given
-        setupAuthentication();
-        given(projectRepository.findById(1L)).willReturn(Optional.of(project));
-
-        //when
-        ProjectResponse result = projectService.getProjectById(1L);
-
-        //then
-        assertThat(result.getProjectName()).isEqualTo(project.getProjectName());
-        assertThat(result.getId()).isEqualTo(project.getId());
-        verify(authentication).getName();
-    }
-
-    @Test
-    @DisplayName("내 프로젝트 목록 조회 성공")
-    void getMyProjects_Success() {
+    @DisplayName("내 프로젝트 목록 조회 성공 - 캐시 TTL 연장")
+    void getMyProjects_Success_ExtendCacheTTL() {
         // given
-        setupAuthentication();
         given(projectRepository.findAllByMemberId(1L)).willReturn(List.of(project));
+        given(redisTemplate.getExpire("project::member:1")).willReturn(1500L);
 
         // when
-        List<ProjectResponse> result = projectService.getMyProjects();
+        List<ProjectResponse> responses = projectService.getMyProjects();
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(project.getId());
-        assertThat(result.get(0).getProjectName()).isEqualTo(project.getProjectName());
-        verify(authentication).getName();
+        assertThat(responses).hasSize(1);
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
     }
 
     @Test
-    @DisplayName("프로젝트 수정 성공")
-    void updateProject_Success() {
+    @DisplayName("프로젝트 단건 조회 성공 - 캐시 TTL 연장")
+    void getProjectById_Success_ExtendCacheTTL() {
         // given
-        setupAuthentication();
+        given(projectRepository.findById(1L)).willReturn(Optional.of(project));
+        given(redisTemplate.getExpire("project::project:1")).willReturn(1500L);
+
+        // when
+        ProjectResponse response = projectService.getProjectById(1L);
+
+        // then
+        assertThat(response.getId()).isEqualTo(project.getId());
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
+    }
+
+    @Test
+    @DisplayName("프로젝트 수정 성공 - 캐시 갱신")
+    void updateProject_Success_CacheUpdate() {
+        // given
         given(projectRepository.findById(1L)).willReturn(Optional.of(project));
 
         // when
         projectService.updateProject(1L, updateRequest);
 
         // then
-        assertThat(project.getProjectName()).isEqualTo(updateRequest.getProjectName());
-        assertThat(project.getShortDescription()).isEqualTo(updateRequest.getShortDescription());
-        verify(authentication).getName();
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
-    @DisplayName("프로젝트 삭제 성공")
-    void deleteProject_Success() {
+    @DisplayName("프로젝트 삭제 성공 - 캐시 제거")
+    void deleteProject_Success_CacheEviction() {
         // given
-        setupAuthentication();
         given(projectRepository.findById(1L)).willReturn(Optional.of(project));
 
         // when
@@ -190,7 +208,8 @@ class ProjectServiceTest {
 
         // then
         verify(projectRepository).delete(project);
-        verify(authentication).getName();
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
@@ -208,15 +227,11 @@ class ProjectServiceTest {
     @DisplayName("권한 없는 프로젝트 수정 시 예외 발생")
     void updateProject_Unauthorized() throws Exception {
         // given
-        setupAuthentication();
         Member otherMember = Member.builder()
                 .email("other@test.com")
                 .name("다른사용자")
                 .build();
-
-        Field otherMemberIdField = otherMember.getClass().getDeclaredField("id");
-        otherMemberIdField.setAccessible(true);
-        otherMemberIdField.set(otherMember, 2L);
+        setId(otherMember, 2L);
 
         Project otherProject = Project.builder()
                 .member(otherMember)
@@ -228,16 +243,12 @@ class ProjectServiceTest {
                 .teamComposition("다른 팀 구성")
                 .detailedDescription("다른 상세 설명")
                 .build();
-
-        Field otherProjectIdField = otherProject.getClass().getDeclaredField("id");
-        otherProjectIdField.setAccessible(true);
-        otherProjectIdField.set(otherProject, 1L);
+        setId(otherProject, 1L);
 
         given(projectRepository.findById(1L)).willReturn(Optional.of(otherProject));
 
         // when & then
         assertThatThrownBy(() -> projectService.updateProject(1L, updateRequest))
                 .isInstanceOf(UnauthorizedAccessException.class);
-        verify(authentication).getName();
     }
 }

@@ -11,20 +11,34 @@ import com.example.Modulo.exception.UnauthorizedAccessException;
 import com.example.Modulo.repository.EtcRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EtcService {
+    private static final String CACHE_NAME = "etc";
+    private static final long EXTEND_TTL_THRESHOLD = 30 * 60;
+    private static final long EXTEND_TTL_DURATION = 60 * 60;
 
     private final EtcRepository etcRepository;
     private final MemberRepository memberRepository;
+    private final CacheManager cacheManager;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Transactional
     public Long createEtc(EtcCreateRequest request) {
@@ -41,17 +55,33 @@ public class EtcService {
                 .score(request.getScore())
                 .build();
 
-        return etcRepository.save(etc).getId();
+        Long etcId = etcRepository.save(etc).getId();
+
+        String cacheKey = CACHE_NAME + "::etc:" + etcId;
+        EtcResponse response = EtcResponse.from(etc);
+        redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+
+        evictRelatedCaches();
+        return etcId;
     }
 
+    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<EtcResponse> getMyEtcs() {
-        Long memberId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
-        return etcRepository.findAllByMemberId(memberId).stream()
+        String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String cacheKey = CACHE_NAME + "::member:" + memberId;
+
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+        }
+
+        return etcRepository.findAllByMemberId(Long.parseLong(memberId)).stream()
                 .map(EtcResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateEtc(Long id, EtcUpdateRequest request) {
         Etc etc = etcRepository.findById(id)
                 .orElseThrow(EtcNotFoundException::new);
@@ -67,9 +97,12 @@ public class EtcService {
                 request.getOrganization(),
                 request.getScore()
         );
+
+        evictRelatedCaches();
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteEtc(Long id) {
         Etc etc = etcRepository.findById(id)
                 .orElseThrow(EtcNotFoundException::new);
@@ -77,14 +110,22 @@ public class EtcService {
         validateMemberAccess(etc);
 
         etcRepository.delete(etc);
+        evictRelatedCaches();
     }
 
+    @Cacheable(value = CACHE_NAME, key = "'etc:' + #id")
     public EtcResponse getEtcById(Long id) {
+        String cacheKey = CACHE_NAME + "::etc:" + id;
+
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+        }
+
         Etc etc = etcRepository.findById(id)
                 .orElseThrow(EtcNotFoundException::new);
 
         validateMemberAccess(etc);
-
         return EtcResponse.from(etc);
     }
 
@@ -99,5 +140,12 @@ public class EtcService {
         if (!etc.getMember().getId().equals(memberId)) {
             throw new UnauthorizedAccessException();
         }
+    }
+
+    private void evictRelatedCaches() {
+        String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
+        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
+        redisTemplate.delete("savedModules::member:" + memberId);
+        redisTemplate.delete("resumes::member:" + memberId);
     }
 }

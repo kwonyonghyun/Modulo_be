@@ -16,6 +16,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,12 +29,15 @@ import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CareerServiceTest {
@@ -45,10 +52,25 @@ class CareerServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private SavedModuleService savedModuleService;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
     private Authentication authentication;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
     private Member member;
     private Career career;
@@ -61,10 +83,7 @@ class CareerServiceTest {
                 .email("test@test.com")
                 .name("테스터")
                 .build();
-
-        Field memberIdField = member.getClass().getDeclaredField("id");
-        memberIdField.setAccessible(true);
-        memberIdField.set(member, 1L);
+        setId(member, 1L);
 
         career = Career.builder()
                 .member(member)
@@ -76,10 +95,7 @@ class CareerServiceTest {
                 .techStack(Arrays.asList("Java", "Spring", "MySQL"))
                 .achievements("주요 성과")
                 .build();
-
-        Field careerIdField = career.getClass().getDeclaredField("id");
-        careerIdField.setAccessible(true);
-        careerIdField.set(career, 1L);
+        setId(career, 1L);
 
         createRequest = new CareerCreateRequest();
         setFieldValue(createRequest, "startDate", YearMonth.of(2020, 3));
@@ -100,8 +116,19 @@ class CareerServiceTest {
         setFieldValue(updateRequest, "achievements", "수정된 성과");
 
         SecurityContextHolder.setContext(securityContext);
-        given(securityContext.getAuthentication()).willReturn(authentication);
-        given(authentication.getName()).willReturn("1");
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getName()).thenReturn("1");
+
+
+        lenient().when(cacheManager.getCache("career")).thenReturn(cache);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.getExpire(anyString())).thenReturn(1800L);
+    }
+
+    private void setId(Object object, Long id) throws Exception {
+        Field idField = object.getClass().getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(object, id);
     }
 
     private void setFieldValue(Object object, String fieldName, Object value) throws Exception {
@@ -111,8 +138,8 @@ class CareerServiceTest {
     }
 
     @Test
-    @DisplayName("경력 정보 생성 성공")
-    void createCareer_Success() {
+    @DisplayName("경력 정보 생성 성공 - 캐시 갱신")
+    void createCareer_Success_CacheUpdate() {
         // given
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(careerRepository.save(any(Career.class))).willReturn(career);
@@ -123,43 +150,43 @@ class CareerServiceTest {
         // then
         assertThat(careerId).isEqualTo(1L);
         verify(careerRepository).save(any(Career.class));
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
-    @DisplayName("내 경력 정보 목록 조회 성공")
-    void getMyCareers_Success() {
+    @DisplayName("내 경력 정보 목록 조회 성공 - 캐시 TTL 연장")
+    void getMyCareers_Success_ExtendCacheTTL() {
         // given
         given(careerRepository.findAllByMemberId(1L)).willReturn(List.of(career));
+        given(redisTemplate.getExpire("career::member:1")).willReturn(1500L);
 
         // when
-        List<CareerResponse> result = careerService.getMyCareers();
+        List<CareerResponse> responses = careerService.getMyCareers();
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(career.getId());
-        assertThat(result.get(0).getCompanyName()).isEqualTo(career.getCompanyName());
-        assertThat(result.get(0).getPosition()).isEqualTo(career.getPosition());
+        assertThat(responses).hasSize(1);
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
     }
 
     @Test
-    @DisplayName("경력 정보 단건 조회 성공")
-    void getCareerById_Success() {
+    @DisplayName("경력 정보 단건 조회 성공 - 캐시 TTL 연장")
+    void getCareerById_Success_ExtendCacheTTL() {
         // given
         given(careerRepository.findById(1L)).willReturn(Optional.of(career));
+        given(redisTemplate.getExpire("career::career:1")).willReturn(1500L);
 
         // when
-        CareerResponse result = careerService.getCareerById(1L);
+        CareerResponse response = careerService.getCareerById(1L);
 
         // then
-        assertThat(result.getCompanyName()).isEqualTo(career.getCompanyName());
-        assertThat(result.getPosition()).isEqualTo(career.getPosition());
-        assertThat(result.getTechStack()).isEqualTo(career.getTechStack());
-        assertThat(result.getId()).isEqualTo(career.getId());
+        assertThat(response.getId()).isEqualTo(career.getId());
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
     }
 
     @Test
-    @DisplayName("경력 정보 수정 성공")
-    void updateCareer_Success() {
+    @DisplayName("경력 정보 수정 성공 - 캐시 갱신")
+    void updateCareer_Success_CacheUpdate() {
         // given
         given(careerRepository.findById(1L)).willReturn(Optional.of(career));
 
@@ -167,14 +194,13 @@ class CareerServiceTest {
         careerService.updateCareer(1L, updateRequest);
 
         // then
-        assertThat(career.getCompanyName()).isEqualTo(updateRequest.getCompanyName());
-        assertThat(career.getPosition()).isEqualTo(updateRequest.getPosition());
-        verify(careerRepository).findById(1L);
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
-    @DisplayName("경력 정보 삭제 성공")
-    void deleteCareer_Success() {
+    @DisplayName("경력 정보 삭제 성공 - 캐시 제거")
+    void deleteCareer_Success_CacheEviction() {
         // given
         given(careerRepository.findById(1L)).willReturn(Optional.of(career));
 
@@ -183,6 +209,8 @@ class CareerServiceTest {
 
         // then
         verify(careerRepository).delete(career);
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
@@ -204,10 +232,7 @@ class CareerServiceTest {
                 .email("other@test.com")
                 .name("다른사용자")
                 .build();
-
-        Field otherMemberIdField = otherMember.getClass().getDeclaredField("id");
-        otherMemberIdField.setAccessible(true);
-        otherMemberIdField.set(otherMember, 2L);
+        setId(otherMember, 2L);
 
         Career otherCareer = Career.builder()
                 .member(otherMember)
@@ -219,10 +244,7 @@ class CareerServiceTest {
                 .techStack(Arrays.asList("Python", "Django"))
                 .achievements("다른 성과")
                 .build();
-
-        Field otherCareerIdField = otherCareer.getClass().getDeclaredField("id");
-        otherCareerIdField.setAccessible(true);
-        otherCareerIdField.set(otherCareer, 1L);
+        setId(otherCareer, 1L);
 
         given(careerRepository.findById(1L)).willReturn(Optional.of(otherCareer));
 

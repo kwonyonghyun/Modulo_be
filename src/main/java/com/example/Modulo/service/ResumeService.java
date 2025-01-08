@@ -17,26 +17,37 @@ import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.repository.ResumeRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ResumeService {
+    private static final String CACHE_NAME = "resumes";
+    private static final long EXTEND_TTL_THRESHOLD = 30 * 60;
+    private static final long EXTEND_TTL_DURATION = 60 * 60;
 
     private final ResumeRepository resumeRepository;
     private final MemberRepository memberRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final SavedModuleService savedModuleService;
     private final BasicInfoService basicInfoService;
     private final CareerService careerService;
     private final EducationService educationService;
     private final EtcService etcService;
     private final ProjectService projectService;
-    private final SavedModuleService savedModuleService;
     private final SelfIntroductionService selfIntroductionService;
 
     private Long getCurrentMemberId() {
@@ -44,6 +55,7 @@ public class ResumeService {
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public Long createResume(ResumeCreateRequest request) {
         Long memberId = getCurrentMemberId();
         Member member = memberRepository.findById(memberId)
@@ -55,20 +67,102 @@ public class ResumeService {
                 .build();
 
         validateAndCreateSections(request.getSections(), resume);
+        Long resumeId = resumeRepository.save(resume).getId();
 
-        return resumeRepository.save(resume).getId();
+        return resumeId;
+    }
+
+    @Cacheable(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    public List<ResumeResponse> getMyResumes() {
+        String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String cacheKey = CACHE_NAME + "::" + memberId;
+
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+        }
+
+        return resumeRepository.findAllByMemberId(Long.parseLong(memberId)).stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(ResumeResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateResume(Long resumeId, ResumeUpdateRequest request) {
-        Long memberId = getCurrentMemberId();
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(ResumeNotFoundException::new);
-
-        validateMemberAccess(resume, memberId);
+        Resume resume = findResumeById(resumeId);
+        validateMemberAccess(resume);
 
         resume.updateTitle(request.getTitle());
         validateAndCreateSections(request.getSections(), resume);
+    }
+
+    @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    public void deleteResume(Long resumeId) {
+        Resume resume = findResumeById(resumeId);
+        validateMemberAccess(resume);
+
+        resumeRepository.delete(resume);
+    }
+
+    public ResumeResponse getResumeById(Long resumeId) {
+        Resume resume = findResumeById(resumeId);
+        validateMemberAccess(resume);
+        return ResumeResponse.from(resume);
+    }
+
+    @Transactional(readOnly = true)
+    public ResumeDetailResponse getResumeDetailById(Long resumeId) {
+        Resume resume = findResumeById(resumeId);
+        validateMemberAccess(resume);
+
+        return ResumeDetailResponse.builder()
+                .id(resume.getId())
+                .title(resume.getTitle())
+                .createdAt(resume.getCreatedAt())
+                .sections(resume.getSections().stream()
+                        .map(section -> {
+                            List<Object> contentDetails = section.getContents().stream()
+                                    .map(content -> switch (section.getSectionType()) {
+                                        case BASIC_INFO -> basicInfoService.getBasicInfoById(content.getContentId());
+                                        case CAREER -> careerService.getCareerById(content.getContentId());
+                                        case EDUCATION -> educationService.getEducationById(content.getContentId());
+                                        case ETC -> etcService.getEtcById(content.getContentId());
+                                        case PROJECT -> projectService.getProjectById(content.getContentId());
+                                        case SELF_INTRODUCTION -> selfIntroductionService.getIntroductionById(content.getContentId());
+                                    })
+                                    .collect(Collectors.toList());
+
+                            return ResumeSectionDetailResponse.builder()
+                                    .id(section.getId())
+                                    .orderIndex(section.getOrderIndex())
+                                    .topMargin(section.getTopMargin())
+                                    .sectionType(section.getSectionType())
+                                    .contents(section.getContents().stream()
+                                            .map(content -> SectionContentDetailResponse.builder()
+                                                    .id(content.getId())
+                                                    .orderIndex(content.getOrderIndex())
+                                                    .topMargin(content.getTopMargin())
+                                                    .content(contentDetails.get(content.getOrderIndex() - 1))
+                                                    .build())
+                                            .collect(Collectors.toList()))
+                                    .build();
+                        })
+                        .collect(Collectors.toList()))
+                .build();
+    }
+
+    private Resume findResumeById(Long resumeId) {
+        return resumeRepository.findById(resumeId)
+                .orElseThrow(ResumeNotFoundException::new);
+    }
+
+    private void validateMemberAccess(Resume resume) {
+        if (!resume.getMember().getId().equals(getCurrentMemberId())) {
+            throw new UnauthorizedAccessException();
+        }
     }
 
     private void validateAndCreateSections(List<ResumeSectionRequest> sectionRequests, Resume resume) {
@@ -113,8 +207,6 @@ public class ResumeService {
         });
     }
 
-
-
     private List<SectionContent> createSectionContents(List<SectionContentRequest> contentRequests, ResumeSection section) {
         return contentRequests.stream()
                 .map(request -> SectionContent.builder()
@@ -124,85 +216,5 @@ public class ResumeService {
                         .contentId(request.getContentId())
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    public List<ResumeResponse> getMyResumes() {
-        Long memberId = getCurrentMemberId();
-        List<Resume> resumes = resumeRepository.findAllByMemberId(memberId);
-        return resumes.stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .map(ResumeResponse::from)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public void deleteResume(Long resumeId) {
-        Long memberId = getCurrentMemberId();
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(ResumeNotFoundException::new);
-
-        validateMemberAccess(resume, memberId);
-
-        resumeRepository.delete(resume);
-    }
-
-    public ResumeResponse getResumeById(Long resumeId) {
-        Long memberId = getCurrentMemberId();
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(ResumeNotFoundException::new);
-
-        validateMemberAccess(resume, memberId);
-
-        return ResumeResponse.from(resume);
-    }
-
-    private void validateMemberAccess(Resume resume, Long memberId) {
-        if (!resume.getMember().getId().equals(memberId)) {
-            throw new UnauthorizedAccessException();
-        }
-    }
-
-    @Transactional(readOnly = true)
-    public ResumeDetailResponse getResumeDetailById(Long resumeId) {
-        Long memberId = getCurrentMemberId();
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(ResumeNotFoundException::new);
-
-        validateMemberAccess(resume, memberId);
-
-        return ResumeDetailResponse.builder()
-                .id(resume.getId())
-                .title(resume.getTitle())
-                .createdAt(resume.getCreatedAt())
-                .sections(resume.getSections().stream()
-                        .map(section -> {
-                            List<Object> contentDetails = section.getContents().stream()
-                                    .map(content -> switch (section.getSectionType()) {
-                                        case BASIC_INFO -> basicInfoService.getBasicInfoById(content.getContentId());
-                                        case CAREER -> careerService.getCareerById(content.getContentId());
-                                        case EDUCATION -> educationService.getEducationById(content.getContentId());
-                                        case ETC -> etcService.getEtcById(content.getContentId());
-                                        case PROJECT -> projectService.getProjectById(content.getContentId());
-                                        case SELF_INTRODUCTION -> selfIntroductionService.getIntroductionById(content.getContentId());
-                                    })
-                                    .collect(Collectors.toList());
-
-                            return ResumeSectionDetailResponse.builder()
-                                    .id(section.getId())
-                                    .orderIndex(section.getOrderIndex())
-                                    .topMargin(section.getTopMargin())
-                                    .sectionType(section.getSectionType())
-                                    .contents(section.getContents().stream()
-                                            .map(content -> SectionContentDetailResponse.builder()
-                                                    .id(content.getId())
-                                                    .orderIndex(content.getOrderIndex())
-                                                    .topMargin(content.getTopMargin())
-                                                    .content(contentDetails.get(content.getOrderIndex() - 1))
-                                                    .build())
-                                            .collect(Collectors.toList()))
-                                    .build();
-                        })
-                        .collect(Collectors.toList()))
-                .build();
     }
 }

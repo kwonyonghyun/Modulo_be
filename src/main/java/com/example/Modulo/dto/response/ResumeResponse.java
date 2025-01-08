@@ -1,19 +1,27 @@
 package com.example.Modulo.dto.response;
 
 import com.example.Modulo.domain.Resume;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Getter
 @Builder
-public class ResumeResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ResumeResponse implements Serializable {
     private Long id;
     private String title;
     private List<ResumeSectionResponse> sections;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     public static ResumeResponse from(Resume resume) {

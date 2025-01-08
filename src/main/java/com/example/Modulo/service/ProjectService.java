@@ -11,20 +11,33 @@ import com.example.Modulo.exception.UnauthorizedAccessException;
 import com.example.Modulo.repository.ProjectRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ProjectService {
+    private static final String CACHE_NAME = "project";
+    private static final long EXTEND_TTL_THRESHOLD = 30 * 60;
+    private static final long EXTEND_TTL_DURATION = 60 * 60;
 
     private final ProjectRepository projectRepository;
     private final MemberRepository memberRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private Long getCurrentMemberId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -42,23 +55,39 @@ public class ProjectService {
                 .endDate(request.getEndDate())
                 .projectName(request.getProjectName())
                 .shortDescription(request.getShortDescription())
-                .techStack(request.getTechStack())
+                .techStack(new ArrayList<>(request.getTechStack()))
                 .teamComposition(request.getTeamComposition())
                 .detailedDescription(request.getDetailedDescription())
                 .build();
 
-        return projectRepository.save(project).getId();
+        Long projectId = projectRepository.save(project).getId();
+
+        ProjectResponse response = ProjectResponse.from(project);
+        String cacheKey = CACHE_NAME + "::project:" + projectId;
+        redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+
+        evictRelatedCaches();
+        return projectId;
     }
 
+    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<ProjectResponse> getMyProjects() {
-        Long memberId = getCurrentMemberId();
-        List<Project> projects = projectRepository.findAllByMemberId(memberId);
+        String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String cacheKey = CACHE_NAME + "::member:" + memberId;
+
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+        }
+
+        List<Project> projects = projectRepository.findAllByMemberId(Long.parseLong(memberId));
         return projects.stream()
                 .map(ProjectResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateProject(Long projectId, ProjectUpdateRequest request) {
         Project project = findProjectById(projectId);
         validateMemberAccess(project);
@@ -72,19 +101,32 @@ public class ProjectService {
                 request.getTeamComposition(),
                 request.getDetailedDescription()
         );
+
+        evictRelatedCaches();
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteProject(Long projectId) {
         Project project = findProjectById(projectId);
         validateMemberAccess(project);
 
         projectRepository.delete(project);
+        evictRelatedCaches();
     }
 
+    @Cacheable(value = CACHE_NAME, key = "'project:' + #projectId")
     public ProjectResponse getProjectById(Long projectId) {
+        String cacheKey = CACHE_NAME + "::project:" + projectId;
+
         Project project = findProjectById(projectId);
         validateMemberAccess(project);
+        ProjectResponse response = ProjectResponse.from(project);
+
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+        }
 
         return ProjectResponse.from(project);
     }
@@ -99,5 +141,12 @@ public class ProjectService {
         if (!project.getMember().getId().equals(currentMemberId)) {
             throw new UnauthorizedAccessException();
         }
+    }
+
+    private void evictRelatedCaches() {
+        String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
+        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
+        redisTemplate.delete("savedModules::member:" + memberId);
+        redisTemplate.delete("resumes::member:" + memberId);
     }
 }

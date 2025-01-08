@@ -11,6 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.YearMonth;
 import java.util.Arrays;
@@ -18,6 +22,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class SavedModuleServiceTest {
@@ -38,10 +43,19 @@ class SavedModuleServiceTest {
     private ProjectService projectService;
 
     @Mock
+    private SecurityContext securityContext;
+
+    @Mock
+    private Authentication authentication;
+
+    @Mock
     private EtcService etcService;
 
     @Mock
     private SelfIntroductionService selfIntroductionService;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
 
     private BasicInfoResponse basicInfoResponse;
     private CareerResponse careerResponse;
@@ -129,11 +143,13 @@ class SavedModuleServiceTest {
         given(projectService.getMyProjects()).willReturn(List.of(projectResponse));
         given(etcService.getMyEtcs()).willReturn(List.of(etcResponse));
         given(selfIntroductionService.getMySelfIntroductions()).willReturn(List.of(selfIntroductionResponse));
+        SecurityContextHolder.setContext(securityContext);
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getName()).thenReturn("1");
 
         // when
         SavedModuleResponse result = savedModuleService.getMySavedModules();
 
-        // then
         assertThat(result.getBasicInfos()).hasSize(1);
         assertThat(result.getCareers()).hasSize(1);
         assertThat(result.getEducations()).hasSize(1);
@@ -141,7 +157,6 @@ class SavedModuleServiceTest {
         assertThat(result.getEtcs()).hasSize(1);
         assertThat(result.getSelfIntroductions()).hasSize(1);
 
-        // BasicInfo 검증
         BasicInfoResponse resultBasicInfo = result.getBasicInfos().get(0);
         assertThat(resultBasicInfo.getName()).isEqualTo("홍길동");
         assertThat(resultBasicInfo.getEmail()).isEqualTo("test@example.com");
@@ -149,29 +164,24 @@ class SavedModuleServiceTest {
         assertThat(resultBasicInfo.getLinks()).hasSize(1);
         assertThat(resultBasicInfo.getLinks().get(0).getTitle()).isEqualTo("GitHub");
 
-        // Career 검증
         CareerResponse resultCareer = result.getCareers().get(0);
         assertThat(resultCareer.getCompanyName()).isEqualTo("테스트회사");
         assertThat(resultCareer.getPosition()).isEqualTo("백엔드 개발자");
         assertThat(resultCareer.getTechStack()).contains("Java", "Spring", "MySQL");
 
-        // Education 검증
         EducationResponse resultEducation = result.getEducations().get(0);
         assertThat(resultEducation.getSchool()).isEqualTo("테스트대학교");
         assertThat(resultEducation.getMajor()).isEqualTo("컴퓨터공학");
         assertThat(resultEducation.getEducationLevel()).isEqualTo(EducationLevel.COLLEGE_2_3);
 
-        // Project 검증
         ProjectResponse resultProject = result.getProjects().get(0);
         assertThat(resultProject.getProjectName()).isEqualTo("테스트 프로젝트");
         assertThat(resultProject.getTechStack()).contains("Java", "Spring", "React");
 
-        // Etc 검증
         EtcResponse resultEtc = result.getEtcs().get(0);
         assertThat(resultEtc.getTitle()).isEqualTo("자격증");
         assertThat(resultEtc.getType()).isEqualTo(EtcType.CERTIFICATE);
 
-        // SelfIntroduction 검증
         SelfIntroductionResponse resultSelfIntro = result.getSelfIntroductions().get(0);
         assertThat(resultSelfIntro.getTitle()).isEqualTo("자기소개서");
         assertThat(resultSelfIntro.getContent()).isEqualTo("저는 열정적인 개발자입니다.");

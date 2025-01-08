@@ -2,15 +2,20 @@ package com.example.Modulo.dto.response;
 
 import com.example.Modulo.domain.ResumeSection;
 import com.example.Modulo.global.enums.SectionType;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Getter
 @Builder
-public class ResumeSectionResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ResumeSectionResponse implements Serializable {
     private Long id;
     private Integer orderIndex;
     private Integer topMargin;

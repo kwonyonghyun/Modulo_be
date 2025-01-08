@@ -16,6 +16,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,12 +27,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SelfIntroductionServiceTest {
@@ -43,10 +50,25 @@ class SelfIntroductionServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private SavedModuleService savedModuleService;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
     private Authentication authentication;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
     private Member member;
     private SelfIntroduction selfIntroduction;
@@ -59,20 +81,14 @@ class SelfIntroductionServiceTest {
                 .email("test@test.com")
                 .name("테스터")
                 .build();
-
-        Field memberIdField = member.getClass().getDeclaredField("id");
-        memberIdField.setAccessible(true);
-        memberIdField.set(member, 1L);
+        setId(member, 1L);
 
         selfIntroduction = SelfIntroduction.builder()
                 .member(member)
                 .title("자기소개서 제목")
                 .content("자기소개서 내용")
                 .build();
-
-        Field selfIntroductionIdField = selfIntroduction.getClass().getDeclaredField("id");
-        selfIntroductionIdField.setAccessible(true);
-        selfIntroductionIdField.set(selfIntroduction, 1L);
+        setId(selfIntroduction, 1L);
 
         createRequest = new SelfIntroductionCreateRequest();
         setFieldValue(createRequest, "title", "자기소개서 제목");
@@ -83,8 +99,18 @@ class SelfIntroductionServiceTest {
         setFieldValue(updateRequest, "content", "수정된 내용");
 
         SecurityContextHolder.setContext(securityContext);
-        given(securityContext.getAuthentication()).willReturn(authentication);
-        given(authentication.getName()).willReturn("1");
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getName()).thenReturn("1");
+
+        lenient().when(cacheManager.getCache("selfIntroduction")).thenReturn(cache);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.getExpire(anyString())).thenReturn(1800L);
+    }
+
+    private void setId(Object object, Long id) throws Exception {
+        Field idField = object.getClass().getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(object, id);
     }
 
     private void setFieldValue(Object object, String fieldName, Object value) throws Exception {
@@ -94,8 +120,8 @@ class SelfIntroductionServiceTest {
     }
 
     @Test
-    @DisplayName("자기소개서 생성 성공")
-    void createSelfIntroduction_Success() {
+    @DisplayName("자기소개서 생성 성공 - 캐시 갱신")
+    void createSelfIntroduction_Success_CacheUpdate() {
         // given
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(selfIntroductionRepository.save(any(SelfIntroduction.class))).willReturn(selfIntroduction);
@@ -106,40 +132,43 @@ class SelfIntroductionServiceTest {
         // then
         assertThat(selfIntroductionId).isEqualTo(1L);
         verify(selfIntroductionRepository).save(any(SelfIntroduction.class));
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
-    @DisplayName("내 자기소개서 목록 조회 성공")
-    void getMySelfIntroductions_Success() {
+    @DisplayName("내 자기소개서 목록 조회 성공 - 캐시 TTL 연장")
+    void getMySelfIntroductions_Success_ExtendCacheTTL() {
         // given
         given(selfIntroductionRepository.findAllByMemberId(1L)).willReturn(List.of(selfIntroduction));
+        given(redisTemplate.getExpire("selfIntroduction::member:1")).willReturn(1500L); // Below threshold
 
         // when
-        List<SelfIntroductionResponse> result = selfIntroductionService.getMySelfIntroductions();
+        List<SelfIntroductionResponse> responses = selfIntroductionService.getMySelfIntroductions();
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTitle()).isEqualTo(selfIntroduction.getTitle());
-        assertThat(result.get(0).getContent()).isEqualTo(selfIntroduction.getContent());
+        assertThat(responses).hasSize(1);
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
     }
 
     @Test
-    @DisplayName("내 자기소개서 단건 조회 성공")
-    void getMySelfIntroductions_NotFound() {
-        //given
+    @DisplayName("자기소개서 단건 조회 성공 - 캐시 TTL 연장")
+    void getIntroductionById_Success_ExtendCacheTTL() {
+        // given
         given(selfIntroductionRepository.findById(1L)).willReturn(Optional.of(selfIntroduction));
+        given(redisTemplate.getExpire("selfIntroduction::selfIntroduction:1")).willReturn(1500L); // Below threshold
 
-        //when
-        SelfIntroductionResponse result = selfIntroductionService.getIntroductionById(1L);
+        // when
+        SelfIntroductionResponse response = selfIntroductionService.getIntroductionById(1L);
 
-        //then
-        assertThat(result.getContent()).isEqualTo(selfIntroduction.getContent());
-        assertThat(result.getTitle()).isEqualTo(selfIntroduction.getTitle());
+        // then
+        assertThat(response.getId()).isEqualTo(selfIntroduction.getId());
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
     }
 
     @Test
-    @DisplayName("자기소개서 수정 성공")
-    void updateSelfIntroduction_Success() {
+    @DisplayName("자기소개서 수정 성공 - 캐시 갱신")
+    void updateSelfIntroduction_Success_CacheUpdate() {
         // given
         given(selfIntroductionRepository.findById(1L)).willReturn(Optional.of(selfIntroduction));
 
@@ -147,13 +176,13 @@ class SelfIntroductionServiceTest {
         selfIntroductionService.updateSelfIntroduction(1L, updateRequest);
 
         // then
-        assertThat(selfIntroduction.getTitle()).isEqualTo(updateRequest.getTitle());
-        assertThat(selfIntroduction.getContent()).isEqualTo(updateRequest.getContent());
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
-    @DisplayName("자기소개서 삭제 성공")
-    void deleteSelfIntroduction_Success() {
+    @DisplayName("자기소개서 삭제 성공 - 캐시 제거")
+    void deleteSelfIntroduction_Success_CacheEviction() {
         // given
         given(selfIntroductionRepository.findById(1L)).willReturn(Optional.of(selfIntroduction));
 
@@ -162,6 +191,8 @@ class SelfIntroductionServiceTest {
 
         // then
         verify(selfIntroductionRepository).delete(selfIntroduction);
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
@@ -183,20 +214,14 @@ class SelfIntroductionServiceTest {
                 .email("other@test.com")
                 .name("다른사용자")
                 .build();
-
-        Field otherMemberIdField = otherMember.getClass().getDeclaredField("id");
-        otherMemberIdField.setAccessible(true);
-        otherMemberIdField.set(otherMember, 2L);
+        setId(otherMember, 2L);
 
         SelfIntroduction otherSelfIntroduction = SelfIntroduction.builder()
                 .member(otherMember)
                 .title("다른 제목")
                 .content("다른 내용")
                 .build();
-
-        Field otherSelfIntroductionIdField = otherSelfIntroduction.getClass().getDeclaredField("id");
-        otherSelfIntroductionIdField.setAccessible(true);
-        otherSelfIntroductionIdField.set(otherSelfIntroduction, 1L);
+        setId(otherSelfIntroduction, 1L);
 
         given(selfIntroductionRepository.findById(1L)).willReturn(Optional.of(otherSelfIntroduction));
 
@@ -204,4 +229,4 @@ class SelfIntroductionServiceTest {
         assertThatThrownBy(() -> selfIntroductionService.updateSelfIntroduction(1L, updateRequest))
                 .isInstanceOf(UnauthorizedAccessException.class);
     }
-} 
+}

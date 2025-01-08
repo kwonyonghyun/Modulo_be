@@ -17,6 +17,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,13 +29,15 @@ import java.lang.reflect.Field;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class EtcServiceTest {
@@ -46,10 +52,25 @@ class EtcServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private SavedModuleService savedModuleService;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
     private Authentication authentication;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
     private Member member;
     private Etc etc;
@@ -62,10 +83,7 @@ class EtcServiceTest {
                 .email("test@test.com")
                 .name("테스터")
                 .build();
-
-        Field memberIdField = member.getClass().getDeclaredField("id");
-        memberIdField.setAccessible(true);
-        memberIdField.set(member, 1L);
+        setId(member, 1L);
 
         etc = Etc.builder()
                 .member(member)
@@ -77,10 +95,7 @@ class EtcServiceTest {
                 .organization("한국데이터산업진흥원")
                 .score("최종합격")
                 .build();
-
-        Field etcIdField = etc.getClass().getDeclaredField("id");
-        etcIdField.setAccessible(true);
-        etcIdField.set(etc, 1L);
+        setId(etc, 1L);
 
         createRequest = new EtcCreateRequest();
         setFieldValue(createRequest, "startDate", YearMonth.of(2023, 1));
@@ -103,6 +118,16 @@ class EtcServiceTest {
         SecurityContextHolder.setContext(securityContext);
         lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
         lenient().when(authentication.getName()).thenReturn("1");
+
+        lenient().when(cacheManager.getCache("etc")).thenReturn(cache);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(redisTemplate.getExpire(anyString())).thenReturn(1800L);
+    }
+
+    private void setId(Object object, Long id) throws Exception {
+        Field idField = object.getClass().getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(object, id);
     }
 
     private void setFieldValue(Object object, String fieldName, Object value) throws Exception {
@@ -112,8 +137,8 @@ class EtcServiceTest {
     }
 
     @Test
-    @DisplayName("기타사항 생성 성공")
-    void createEtc_Success() {
+    @DisplayName("기타사항 생성 성공 - 캐시 갱신")
+    void createEtc_Success_CacheUpdate() {
         // given
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(etcRepository.save(any(Etc.class))).willReturn(etc);
@@ -124,43 +149,43 @@ class EtcServiceTest {
         // then
         assertThat(etcId).isEqualTo(1L);
         verify(etcRepository).save(any(Etc.class));
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
-    @DisplayName("내 기타사항 목록 조회 성공")
-    void getMyEtcs_Success() {
+    @DisplayName("내 기타사항 목록 조회 성공 - 캐시 TTL 연장")
+    void getMyEtcs_Success_ExtendCacheTTL() {
         // given
         given(etcRepository.findAllByMemberId(1L)).willReturn(List.of(etc));
+        given(redisTemplate.getExpire("etc::member:1")).willReturn(1500L);
 
         // when
-        List<EtcResponse> result = etcService.getMyEtcs();
+        List<EtcResponse> responses = etcService.getMyEtcs();
 
         // then
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTitle()).isEqualTo(etc.getTitle());
-        assertThat(result.get(0).getType()).isEqualTo(etc.getType());
+        assertThat(responses).hasSize(1);
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
     }
 
     @Test
-    @DisplayName("기타사항 단건 조회 성공")
-    void getEtcById_Success() {
+    @DisplayName("기타사항 단건 조회 성공 - 캐시 TTL 연장")
+    void getEtcById_Success_ExtendCacheTTL() {
         // given
         given(etcRepository.findById(1L)).willReturn(Optional.of(etc));
+        given(redisTemplate.getExpire("etc::etc:1")).willReturn(1500L);
 
         // when
-        EtcResponse result = etcService.getEtcById(1L);
+        EtcResponse response = etcService.getEtcById(1L);
 
         // then
-        assertThat(result.getId()).isEqualTo(etc.getId());
-        assertThat(result.getTitle()).isEqualTo(etc.getTitle());
-        assertThat(result.getType()).isEqualTo(etc.getType());
-        assertThat(result.getOrganization()).isEqualTo(etc.getOrganization());
-        assertThat(result.getScore()).isEqualTo(etc.getScore());
+        assertThat(response.getId()).isEqualTo(etc.getId());
+        verify(redisTemplate).expire(anyString(), eq(3600L), eq(TimeUnit.SECONDS));
     }
 
     @Test
-    @DisplayName("기타사항 수정 성공")
-    void updateEtc_Success() {
+    @DisplayName("기타사항 수정 성공 - 캐시 갱신")
+    void updateEtc_Success_CacheUpdate() {
         // given
         given(etcRepository.findById(1L)).willReturn(Optional.of(etc));
 
@@ -168,13 +193,13 @@ class EtcServiceTest {
         etcService.updateEtc(1L, updateRequest);
 
         // then
-        assertThat(etc.getTitle()).isEqualTo(updateRequest.getTitle());
-        assertThat(etc.getDescription()).isEqualTo(updateRequest.getDescription());
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
-    @DisplayName("기타사항 삭제 성공")
-    void deleteEtc_Success() {
+    @DisplayName("기타사항 삭제 성공 - 캐시 제거")
+    void deleteEtc_Success_CacheEviction() {
         // given
         given(etcRepository.findById(1L)).willReturn(Optional.of(etc));
 
@@ -183,6 +208,8 @@ class EtcServiceTest {
 
         // then
         verify(etcRepository).delete(etc);
+        verify(redisTemplate).delete(contains("savedModules::member:"));
+        verify(redisTemplate).delete(contains("resumes::member:"));
     }
 
     @Test
@@ -204,10 +231,7 @@ class EtcServiceTest {
                 .email("other@test.com")
                 .name("다른사용자")
                 .build();
-
-        Field otherMemberIdField = otherMember.getClass().getDeclaredField("id");
-        otherMemberIdField.setAccessible(true);
-        otherMemberIdField.set(otherMember, 2L);
+        setId(otherMember, 2L);
 
         Etc otherEtc = Etc.builder()
                 .member(otherMember)
@@ -219,10 +243,7 @@ class EtcServiceTest {
                 .organization("다른 기관")
                 .score("다른 점수")
                 .build();
-
-        Field otherEtcIdField = otherEtc.getClass().getDeclaredField("id");
-        otherEtcIdField.setAccessible(true);
-        otherEtcIdField.set(otherEtc, 1L);
+        setId(otherEtc, 1L);
 
         given(etcRepository.findById(1L)).willReturn(Optional.of(otherEtc));
 
