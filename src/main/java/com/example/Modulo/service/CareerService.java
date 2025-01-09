@@ -8,6 +8,7 @@ import com.example.Modulo.dto.response.CareerResponse;
 import com.example.Modulo.exception.CareerNotFoundException;
 import com.example.Modulo.exception.MemberNotFoundException;
 import com.example.Modulo.exception.UnauthorizedAccessException;
+import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.repository.CareerRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class CareerService {
     private final CareerRepository careerRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ResumeSectionHandler resumeSectionHandler;
 
     private Long getCurrentMemberId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -111,6 +113,7 @@ public class CareerService {
 
         careerRepository.delete(career);
         evictRelatedCaches();
+        resumeSectionHandler.handleContentDeletion(careerId, SectionType.CAREER);
     }
 
     @Cacheable(value = CACHE_NAME, key = "'career:' + #careerId")

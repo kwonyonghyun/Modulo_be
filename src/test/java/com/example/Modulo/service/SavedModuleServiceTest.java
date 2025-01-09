@@ -46,6 +46,9 @@ class SavedModuleServiceTest {
     private SecurityContext securityContext;
 
     @Mock
+    private ResumeSectionHandler resumeSectionHandler;
+
+    @Mock
     private Authentication authentication;
 
     @Mock

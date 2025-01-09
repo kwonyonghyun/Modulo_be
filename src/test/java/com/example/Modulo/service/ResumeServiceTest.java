@@ -65,6 +65,9 @@ class ResumeServiceTest {
     private RedisTemplate<String, Object> redisTemplate;
 
     @Mock
+    private ResumeSectionHandler resumeSectionHandler;
+
+    @Mock
     private SavedModuleService savedModuleService;
 
     @Mock

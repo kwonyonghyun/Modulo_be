@@ -9,6 +9,7 @@ import com.example.Modulo.dto.response.BasicInfoResponse;
 import com.example.Modulo.exception.BasicInfoNotFoundException;
 import com.example.Modulo.exception.BasicInfoUnauthorizedException;
 import com.example.Modulo.exception.MemberNotFoundException;
+import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.global.service.S3Service;
 import com.example.Modulo.repository.BasicInfoRepository;
 import com.example.Modulo.repository.MemberRepository;
@@ -43,6 +44,7 @@ public class BasicInfoService {
     private final MemberRepository memberRepository;
     private final S3Service s3Service;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ResumeSectionHandler resumeSectionHandler;
 
     private Long getCurrentMemberId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -157,6 +159,7 @@ public class BasicInfoService {
 
         basicInfoRepository.delete(basicInfo);
         evictRelatedCaches();
+        resumeSectionHandler.handleContentDeletion(id, SectionType.BASIC_INFO);
     }
 
     @Cacheable(value = CACHE_NAME, key = "'basicInfo:' + #id")

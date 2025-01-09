@@ -8,6 +8,7 @@ import com.example.Modulo.dto.response.ProjectResponse;
 import com.example.Modulo.exception.ProjectNotFoundException;
 import com.example.Modulo.exception.MemberNotFoundException;
 import com.example.Modulo.exception.UnauthorizedAccessException;
+import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.repository.ProjectRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ResumeSectionHandler resumeSectionHandler;
 
     private Long getCurrentMemberId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -113,6 +115,7 @@ public class ProjectService {
 
         projectRepository.delete(project);
         evictRelatedCaches();
+        resumeSectionHandler.handleContentDeletion(projectId, SectionType.PROJECT);
     }
 
     @Cacheable(value = CACHE_NAME, key = "'project:' + #projectId")

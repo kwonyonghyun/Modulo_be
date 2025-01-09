@@ -8,6 +8,7 @@ import com.example.Modulo.dto.response.SelfIntroductionResponse;
 import com.example.Modulo.exception.SelfIntroductionNotFoundException;
 import com.example.Modulo.exception.MemberNotFoundException;
 import com.example.Modulo.exception.UnauthorizedAccessException;
+import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.repository.SelfIntroductionRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class SelfIntroductionService {
     private final SelfIntroductionRepository selfIntroductionRepository;
     private final MemberRepository memberRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ResumeSectionHandler resumeSectionHandler;
 
     private Long getCurrentMemberId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -103,6 +105,7 @@ public class SelfIntroductionService {
 
         selfIntroductionRepository.delete(selfIntroduction);
         evictRelatedCaches();
+        resumeSectionHandler.handleContentDeletion(selfIntroductionId, SectionType.SELF_INTRODUCTION);
     }
 
     @Cacheable(value = CACHE_NAME, key = "'selfIntroduction:' + #selfIntroductionId")

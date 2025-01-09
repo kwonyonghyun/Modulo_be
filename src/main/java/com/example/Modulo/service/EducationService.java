@@ -8,6 +8,7 @@ import com.example.Modulo.dto.response.EducationResponse;
 import com.example.Modulo.exception.EducationNotFoundException;
 import com.example.Modulo.exception.MemberNotFoundException;
 import com.example.Modulo.exception.UnauthorizedAccessException;
+import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.repository.EducationRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class EducationService {
     private final MemberRepository memberRepository;
     private final CacheManager cacheManager;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ResumeSectionHandler resumeSectionHandler;
 
     private Long getCurrentMemberId() {
         return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
@@ -110,6 +112,7 @@ public class EducationService {
 
         educationRepository.delete(education);
         evictRelatedCaches();
+        resumeSectionHandler.handleContentDeletion(educationId, SectionType.EDUCATION);
     }
 
     @Cacheable(value = CACHE_NAME, key = "'education:' + #educationId")

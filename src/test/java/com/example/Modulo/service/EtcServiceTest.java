@@ -52,6 +52,9 @@ class EtcServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
+    private ResumeSectionHandler resumeSectionHandler;
+
+    @Mock
     private CacheManager cacheManager;
 
     @Mock

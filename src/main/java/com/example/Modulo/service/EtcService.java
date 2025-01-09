@@ -8,6 +8,7 @@ import com.example.Modulo.dto.response.EtcResponse;
 import com.example.Modulo.exception.EtcNotFoundException;
 import com.example.Modulo.exception.MemberNotFoundException;
 import com.example.Modulo.exception.UnauthorizedAccessException;
+import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.repository.EtcRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class EtcService {
     private final MemberRepository memberRepository;
     private final CacheManager cacheManager;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ResumeSectionHandler resumeSectionHandler;
 
     @Transactional
     public Long createEtc(EtcCreateRequest request) {
@@ -111,6 +113,7 @@ public class EtcService {
 
         etcRepository.delete(etc);
         evictRelatedCaches();
+        resumeSectionHandler.handleContentDeletion(id, SectionType.ETC);
     }
 
     @Cacheable(value = CACHE_NAME, key = "'etc:' + #id")

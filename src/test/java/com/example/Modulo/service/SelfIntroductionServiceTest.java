@@ -59,6 +59,9 @@ class SelfIntroductionServiceTest {
     private SavedModuleService savedModuleService;
 
     @Mock
+    private ResumeSectionHandler resumeSectionHandler;
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
