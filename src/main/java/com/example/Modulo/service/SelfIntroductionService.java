@@ -136,7 +136,7 @@ public class SelfIntroductionService {
     private void evictRelatedCaches() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
         redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
-        redisTemplate.delete("savedModules::member:" + memberId);
-        redisTemplate.delete("resumes::member:" + memberId);
+        redisTemplate.delete("savedModules::" + memberId);
+        redisTemplate.delete("resumes::" + memberId);
     }
 }

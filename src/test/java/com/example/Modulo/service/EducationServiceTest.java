@@ -146,8 +146,8 @@ class EducationServiceTest {
         // then
         assertThat(educationId).isEqualTo(1L);
         verify(educationRepository).save(any(Education.class));
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -190,8 +190,8 @@ class EducationServiceTest {
         educationService.updateEducation(1L, updateRequest);
 
         // then
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -205,8 +205,8 @@ class EducationServiceTest {
 
         // then
         verify(educationRepository).delete(education);
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test

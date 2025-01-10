@@ -152,8 +152,8 @@ class EtcServiceTest {
         // then
         assertThat(etcId).isEqualTo(1L);
         verify(etcRepository).save(any(Etc.class));
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -196,8 +196,8 @@ class EtcServiceTest {
         etcService.updateEtc(1L, updateRequest);
 
         // then
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -211,8 +211,8 @@ class EtcServiceTest {
 
         // then
         verify(etcRepository).delete(etc);
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test

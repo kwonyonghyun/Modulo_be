@@ -153,8 +153,8 @@ class CareerServiceTest {
         // then
         assertThat(careerId).isEqualTo(1L);
         verify(careerRepository).save(any(Career.class));
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -197,8 +197,8 @@ class CareerServiceTest {
         careerService.updateCareer(1L, updateRequest);
 
         // then
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -212,8 +212,8 @@ class CareerServiceTest {
 
         // then
         verify(careerRepository).delete(career);
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test

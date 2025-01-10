@@ -152,8 +152,8 @@ class ProjectServiceTest {
         // then
         assertThat(projectId).isEqualTo(1L);
         verify(projectRepository).save(any(Project.class));
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -196,8 +196,8 @@ class ProjectServiceTest {
         projectService.updateProject(1L, updateRequest);
 
         // then
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -211,8 +211,8 @@ class ProjectServiceTest {
 
         // then
         verify(projectRepository).delete(project);
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test

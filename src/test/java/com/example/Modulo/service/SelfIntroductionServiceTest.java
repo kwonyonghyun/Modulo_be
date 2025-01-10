@@ -135,8 +135,8 @@ class SelfIntroductionServiceTest {
         // then
         assertThat(selfIntroductionId).isEqualTo(1L);
         verify(selfIntroductionRepository).save(any(SelfIntroduction.class));
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -144,7 +144,7 @@ class SelfIntroductionServiceTest {
     void getMySelfIntroductions_Success_ExtendCacheTTL() {
         // given
         given(selfIntroductionRepository.findAllByMemberId(1L)).willReturn(List.of(selfIntroduction));
-        given(redisTemplate.getExpire("selfIntroduction::member:1")).willReturn(1500L); // Below threshold
+        given(redisTemplate.getExpire("selfIntroduction::member:1")).willReturn(1500L);
 
         // when
         List<SelfIntroductionResponse> responses = selfIntroductionService.getMySelfIntroductions();
@@ -179,8 +179,8 @@ class SelfIntroductionServiceTest {
         selfIntroductionService.updateSelfIntroduction(1L, updateRequest);
 
         // then
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test
@@ -194,8 +194,8 @@ class SelfIntroductionServiceTest {
 
         // then
         verify(selfIntroductionRepository).delete(selfIntroduction);
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test

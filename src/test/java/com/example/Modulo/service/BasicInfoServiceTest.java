@@ -195,8 +195,8 @@ class BasicInfoServiceTest {
         basicInfoService.updateBasicInfo(1L, updateRequest, null);
 
         // then
-        verify(redisTemplate, times(1)).delete(contains("savedModules::member:"));
-        verify(redisTemplate, times(1)).delete(contains("resumes::member:"));
+        verify(redisTemplate, times(1)).delete(contains("savedModules::"));
+        verify(redisTemplate, times(1)).delete(contains("resumes::"));
     }
 
     @Test
@@ -211,8 +211,8 @@ class BasicInfoServiceTest {
         // then
         verify(s3Service).deleteFile("existing-image-url");
         verify(basicInfoRepository).delete(basicInfo);
-        verify(redisTemplate).delete(contains("savedModules::member:"));
-        verify(redisTemplate).delete(contains("resumes::member:"));
+        verify(redisTemplate).delete(contains("savedModules::"));
+        verify(redisTemplate).delete(contains("resumes::"));
     }
 
     @Test

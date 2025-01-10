@@ -50,10 +50,6 @@ jobs:
       - name: Create .env.dev file
         run: |
           echo "IMAGE_TAG=dev-${{ github.sha }}" > .env.dev
-          echo "MYSQL_ROOT_PASSWORD=${{ secrets.DEV_MYSQL_ROOT_PASSWORD }}" >> .env.dev
-          echo "MYSQL_DATABASE=${{ secrets.DEV_MYSQL_DATABASE }}" >> .env.dev
-          echo "MYSQL_USER=${{ secrets.DEV_MYSQL_USER }}" >> .env.dev
-          echo "MYSQL_PASSWORD=${{ secrets.DEV_MYSQL_PASSWORD }}" >> .env.dev
           echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env.dev
           echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env.dev
           echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env.dev
