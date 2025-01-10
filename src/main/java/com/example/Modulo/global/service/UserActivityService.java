@@ -2,6 +2,7 @@ package com.example.Modulo.global.service;
 
 import com.example.Modulo.domain.DailyActivity;
 import com.example.Modulo.repository.DailyActivityRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -40,21 +41,22 @@ public class UserActivityService {
         return keys != null ? keys.stream().toList() : List.of();
     }
 
-    private void processWriteBack(String key) {
+    @Transactional
+    public void processWriteBack(String key) {
         try {
-            Set<String> activeUsers = redisTemplate.opsForSet().members(key);
-            if (activeUsers == null || activeUsers.isEmpty()) {
-                return;
-            }
-
             LocalDate date = extractDate(key);
+            Set<String> activeUsers = redisTemplate.opsForSet().members(key);
+
+            long activeUserCount = (activeUsers != null) ? activeUsers.size() : 0L;
+
             DailyActivity activity = DailyActivity.builder()
                     .date(date)
-                    .activeUserCount((long) activeUsers.size())
+                    .activeUserCount(activeUserCount)
                     .lastUpdated(LocalDateTime.now())
                     .build();
 
             dailyActivityRepository.save(activity);
+            redisTemplate.delete(key);
             log.info("Successfully wrote back data for date: {}", date);
         } catch (Exception e) {
             log.error("Failed to process write back for key: " + key, e);

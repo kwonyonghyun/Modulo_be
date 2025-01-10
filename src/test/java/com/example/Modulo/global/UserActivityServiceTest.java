@@ -76,4 +76,46 @@ class UserActivityServiceTest {
         // then
         assertThat(mau).isEqualTo(30L);
     }
+
+    @Test
+    @DisplayName("Redis Set이 비어있는 경우 DAU는 0으로 저장되어야 한다")
+    void shouldSaveZeroWhenSetIsEmpty() {
+        // given
+        String today = LocalDate.now().toString();
+        String key = "dau:" + today;
+
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(redisTemplate.keys(anyString())).thenReturn(Set.of(key));
+        when(setOperations.members(key)).thenReturn(Set.of());
+
+        // when
+        userActivityService.writeBackToDatabase();
+
+        // then
+        verify(dailyActivityRepository).save(argThat(activity ->
+                activity.getDate().equals(LocalDate.now()) &&
+                        activity.getActiveUserCount() == 0L
+        ));
+    }
+
+    @Test
+    @DisplayName("Redis Set이 null인 경우 DAU는 0으로 저장되어야 한다")
+    void shouldSaveZeroWhenSetIsNull() {
+        // given
+        String today = LocalDate.now().toString();
+        String key = "dau:" + today;
+
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(redisTemplate.keys(anyString())).thenReturn(Set.of(key));
+        when(setOperations.members(key)).thenReturn(null);
+
+        // when
+        userActivityService.writeBackToDatabase();
+
+        // then
+        verify(dailyActivityRepository).save(argThat(activity ->
+                activity.getDate().equals(LocalDate.now()) &&
+                        activity.getActiveUserCount() == 0L
+        ));
+    }
 }
