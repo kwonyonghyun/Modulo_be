@@ -89,7 +89,7 @@ public class ResumeService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateResume(Long resumeId, ResumeUpdateRequest request) {
         Resume resume = findResumeById(resumeId);
         validateMemberAccess(resume);
@@ -99,7 +99,7 @@ public class ResumeService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteResume(Long resumeId) {
         Resume resume = findResumeById(resumeId);
         validateMemberAccess(resume);
