@@ -30,7 +30,6 @@ public class Career extends BaseTimeEntity {
     private YearMonth startDate;
 
     @Convert(converter = YearMonthConverter.class)
-    @Column(nullable = false)
     private YearMonth endDate;
 
     @Column(nullable = false)
@@ -76,10 +75,10 @@ public class Career extends BaseTimeEntity {
     }
 
     private void validateDate(YearMonth startDate, YearMonth endDate) {
-        if (startDate == null || endDate == null) {
+        if (startDate == null) {
             throw new InvalidCareerDateException();
         }
-        if (startDate.isAfter(endDate)) {
+        if (endDate != null && startDate.isAfter(endDate)) {
             throw new InvalidCareerDateException();
         }
     }

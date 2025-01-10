@@ -133,18 +133,6 @@ class CareerTest {
                 .achievements(TEST_ACHIEVEMENTS)
                 .build())
                 .isInstanceOf(InvalidCareerDateException.class);
-
-        assertThatThrownBy(() -> Career.builder()
-                .member(member)
-                .startDate(TEST_START_DATE)
-                .endDate(null)
-                .companyName(TEST_COMPANY_NAME)
-                .companyDescription(TEST_COMPANY_DESCRIPTION)
-                .position(TEST_POSITION)
-                .techStack(TEST_TECH_STACK)
-                .achievements(TEST_ACHIEVEMENTS)
-                .build())
-                .isInstanceOf(InvalidCareerDateException.class);
     }
 
     @Test
