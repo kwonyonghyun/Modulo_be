@@ -31,7 +31,6 @@ public class Project extends BaseTimeEntity {
     private YearMonth startDate;
 
     @Convert(converter = YearMonthConverter.class)
-    @Column(nullable = false)
     private YearMonth endDate;
 
     @Column(nullable = false)
@@ -81,7 +80,11 @@ public class Project extends BaseTimeEntity {
     }
 
     private void validateDate(YearMonth startDate, YearMonth endDate) {
-        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+        if (startDate == null) {
+            throw new InvalidProjectDateException();
+        }
+        
+        if (endDate != null && startDate.isAfter(endDate)) {
             throw new InvalidProjectDateException();
         }
     }

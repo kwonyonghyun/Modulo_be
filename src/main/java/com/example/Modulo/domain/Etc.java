@@ -26,7 +26,6 @@ public class Etc extends BaseTimeEntity {
     private Member member;
 
     @Convert(converter = YearMonthConverter.class)
-    @Column(nullable = false)
     private YearMonth startDate;
 
     @Convert(converter = YearMonthConverter.class)
@@ -35,7 +34,7 @@ public class Etc extends BaseTimeEntity {
     @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -52,7 +51,7 @@ public class Etc extends BaseTimeEntity {
     public Etc(Member member, YearMonth startDate, YearMonth endDate, String title,
                String description, EtcType type, String organization, String score) {
         validateDate(startDate);
-        validateFields(title, description, type);
+        validateFields(title, type);
         this.member = member;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -66,7 +65,7 @@ public class Etc extends BaseTimeEntity {
     public void update(YearMonth startDate, YearMonth endDate, String title,
                        String description, EtcType type, String organization, String score) {
         validateDate(startDate);
-        validateFields(title, description, type);
+        validateFields(title, type);
         this.startDate = startDate;
         this.endDate = endDate;
         this.title = title;
@@ -77,15 +76,13 @@ public class Etc extends BaseTimeEntity {
     }
 
     private void validateDate(YearMonth startDate) {
-        if (startDate == null) {
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             throw new InvalidEtcDateException();
         }
     }
 
-    private void validateFields(String title, String description, EtcType type) {
-        if (title == null || title.trim().isEmpty() ||
-                description == null || description.trim().isEmpty() ||
-                type == null) {
+    private void validateFields(String title, EtcType type) {
+        if (title == null || title.trim().isEmpty() || type == null) {
             throw new InvalidEtcFieldException();
         }
     }

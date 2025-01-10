@@ -92,16 +92,6 @@ class EtcTest {
                 .type(TEST_TYPE)
                 .build())
                 .isInstanceOf(InvalidEtcFieldException.class);
-
-        assertThatThrownBy(() -> Etc.builder()
-                .member(member)
-                .startDate(TEST_START_DATE)
-                .endDate(TEST_END_DATE)
-                .title(TEST_TITLE)
-                .description(null)
-                .type(TEST_TYPE)
-                .build())
-                .isInstanceOf(InvalidEtcFieldException.class);
     }
 
     @Test
