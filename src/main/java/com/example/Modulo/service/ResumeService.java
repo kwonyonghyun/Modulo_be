@@ -94,6 +94,7 @@ public class ResumeService {
         validateMemberAccess(resume);
 
         resume.updateTitle(request.getTitle());
+        evictContentCache(resumeId);
         validateAndCreateSections(request.getSections(), resume);
     }
 
@@ -103,6 +104,7 @@ public class ResumeService {
         Resume resume = findResumeById(resumeId);
         validateMemberAccess(resume);
 
+        evictContentCache(resumeId);
         resumeRepository.delete(resume);
     }
 
@@ -230,5 +232,9 @@ public class ResumeService {
                         .contentId(request.getContentId())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private void evictContentCache(Long contentId) {
+        redisTemplate.delete(CACHE_NAME + "::resume-content:" + contentId);
     }
 }
