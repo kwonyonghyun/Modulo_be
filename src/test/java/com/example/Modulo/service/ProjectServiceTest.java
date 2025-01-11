@@ -161,7 +161,7 @@ class ProjectServiceTest {
     void getMyProjects_Success_ExtendCacheTTL() {
         // given
         given(projectRepository.findAllByMemberId(1L)).willReturn(List.of(project));
-        given(redisTemplate.getExpire("project::member:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("project::project-member:1")).willReturn(1500L);
 
         // when
         List<ProjectResponse> responses = projectService.getMyProjects();
@@ -176,7 +176,7 @@ class ProjectServiceTest {
     void getProjectById_Success_ExtendCacheTTL() {
         // given
         given(projectRepository.findById(1L)).willReturn(Optional.of(project));
-        given(redisTemplate.getExpire("project::project:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("project::project-content:1")).willReturn(1500L);
 
         // when
         ProjectResponse response = projectService.getProjectById(1L);

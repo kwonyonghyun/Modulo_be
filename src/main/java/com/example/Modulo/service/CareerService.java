@@ -14,7 +14,6 @@ import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -62,7 +61,7 @@ public class CareerService {
 
         Long careerId = careerRepository.save(career).getId();
 
-        String cacheKey = CACHE_NAME + "::career:" + careerId;
+        String cacheKey = CACHE_NAME + "::career-content:" + careerId;
         CareerResponse response = CareerResponse.from(career);
         redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
 
@@ -70,10 +69,10 @@ public class CareerService {
         return careerId;
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = CACHE_NAME, key = "'career-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<CareerResponse> getMyCareers() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String cacheKey = CACHE_NAME + "::member:" + memberId;
+        String cacheKey = CACHE_NAME + "::career-member:" + memberId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -87,7 +86,7 @@ public class CareerService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'career-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateCareer(Long careerId, CareerUpdateRequest request) {
         Career career = getCareer(careerId);
         validateMemberAccess(career);
@@ -106,7 +105,7 @@ public class CareerService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'career-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteCareer(Long careerId) {
         Career career = getCareer(careerId);
         validateMemberAccess(career);
@@ -116,9 +115,9 @@ public class CareerService {
         resumeSectionHandler.handleContentDeletion(careerId, SectionType.CAREER);
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'career:' + #careerId")
+    @Cacheable(value = CACHE_NAME, key = "'career-content:' + #careerId")
     public CareerResponse getCareerById(Long careerId) {
-        String cacheKey = CACHE_NAME + "::career:" + careerId;
+        String cacheKey = CACHE_NAME + "::career-content:" + careerId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -150,8 +149,8 @@ public class CareerService {
 
     private void evictRelatedCaches() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
-        redisTemplate.delete("savedModules::" + memberId);
-        redisTemplate.delete("resumes::" + memberId);
+        redisTemplate.delete(CACHE_NAME + "::career-member:" + memberId);
+        redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
+        redisTemplate.delete("resumes::resume-member:" + memberId);
     }
 }

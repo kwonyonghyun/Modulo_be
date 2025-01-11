@@ -15,10 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +57,7 @@ public class EtcService {
 
         Long etcId = etcRepository.save(etc).getId();
 
-        String cacheKey = CACHE_NAME + "::etc:" + etcId;
+        String cacheKey = CACHE_NAME + "::etc-content:" + etcId;
         EtcResponse response = EtcResponse.from(etc);
         redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
 
@@ -67,10 +65,10 @@ public class EtcService {
         return etcId;
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = CACHE_NAME, key = "'etc-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<EtcResponse> getMyEtcs() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String cacheKey = CACHE_NAME + "::member:" + memberId;
+        String cacheKey = CACHE_NAME + "::etc-member:" + memberId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -83,7 +81,7 @@ public class EtcService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'etc-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateEtc(Long id, EtcUpdateRequest request) {
         Etc etc = etcRepository.findById(id)
                 .orElseThrow(EtcNotFoundException::new);
@@ -104,7 +102,7 @@ public class EtcService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'etc-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteEtc(Long id) {
         Etc etc = etcRepository.findById(id)
                 .orElseThrow(EtcNotFoundException::new);
@@ -116,9 +114,9 @@ public class EtcService {
         resumeSectionHandler.handleContentDeletion(id, SectionType.ETC);
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'etc:' + #id")
+    @Cacheable(value = CACHE_NAME, key = "'etc-content:' + #id")
     public EtcResponse getEtcById(Long id) {
-        String cacheKey = CACHE_NAME + "::etc:" + id;
+        String cacheKey = CACHE_NAME + "::etc-content:" + id;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -147,8 +145,8 @@ public class EtcService {
 
     private void evictRelatedCaches() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
-        redisTemplate.delete("savedModules::" + memberId);
-        redisTemplate.delete("resumes::" + memberId);
+        redisTemplate.delete(CACHE_NAME + "::etc-member:" + memberId);
+        redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
+        redisTemplate.delete("resumes::resume-member:" + memberId);
     }
 }

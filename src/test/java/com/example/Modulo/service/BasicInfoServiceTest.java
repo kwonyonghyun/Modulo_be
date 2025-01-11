@@ -175,7 +175,7 @@ class BasicInfoServiceTest {
     void getMyBasicInfos_Success_ExtendCacheTTL() {
         // given
         given(basicInfoRepository.findAllByMemberId(1L)).willReturn(List.of(basicInfo));
-        given(redisTemplate.getExpire("basicInfo::member:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("basicInfo::basicinfo-member:1")).willReturn(1500L);
 
         // when
         List<BasicInfoResponse> responses = basicInfoService.getMyBasicInfos();
@@ -220,7 +220,7 @@ class BasicInfoServiceTest {
     void getBasicInfoById_Success_ExtendCacheTTL() {
         // given
         given(basicInfoRepository.findById(1L)).willReturn(Optional.of(basicInfo));
-        given(redisTemplate.getExpire("basicInfo::basicInfo:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("basicInfo::basicinfo-content:1")).willReturn(1500L);
 
         // when
         BasicInfoResponse response = basicInfoService.getBasicInfoById(1L);

@@ -144,7 +144,7 @@ class SelfIntroductionServiceTest {
     void getMySelfIntroductions_Success_ExtendCacheTTL() {
         // given
         given(selfIntroductionRepository.findAllByMemberId(1L)).willReturn(List.of(selfIntroduction));
-        given(redisTemplate.getExpire("selfIntroduction::member:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("selfIntroduction::selfintro-member:1")).willReturn(1500L);
 
         // when
         List<SelfIntroductionResponse> responses = selfIntroductionService.getMySelfIntroductions();
@@ -159,7 +159,7 @@ class SelfIntroductionServiceTest {
     void getIntroductionById_Success_ExtendCacheTTL() {
         // given
         given(selfIntroductionRepository.findById(1L)).willReturn(Optional.of(selfIntroduction));
-        given(redisTemplate.getExpire("selfIntroduction::selfIntroduction:1")).willReturn(1500L); // Below threshold
+        given(redisTemplate.getExpire("selfIntroduction::selfintro-content:1")).willReturn(1500L); // Below threshold
 
         // when
         SelfIntroductionResponse response = selfIntroductionService.getIntroductionById(1L);

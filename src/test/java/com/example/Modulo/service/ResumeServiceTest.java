@@ -155,7 +155,7 @@ class ResumeServiceTest {
     void getMyResumes_Success_ExtendCacheTTL() {
         // given
         given(resumeRepository.findAllByMemberId(1L)).willReturn(List.of(resume));
-        given(redisTemplate.getExpire("resumes::1")).willReturn(1500L);
+        given(redisTemplate.getExpire("resumes::resume-member:1")).willReturn(1500L);
 
         // when
         List<ResumeResponse> result = resumeService.getMyResumes();

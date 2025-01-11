@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +54,7 @@ public class ResumeService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'resume-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public Long createResume(ResumeCreateRequest request) {
         Long memberId = getCurrentMemberId();
         Member member = memberRepository.findById(memberId)
@@ -72,10 +71,10 @@ public class ResumeService {
         return resumeId;
     }
 
-    @Cacheable(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = CACHE_NAME, key = "'resume-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<ResumeResponse> getMyResumes() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String cacheKey = CACHE_NAME + "::" + memberId;
+        String cacheKey = CACHE_NAME + "::resume-member:" + memberId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -89,7 +88,7 @@ public class ResumeService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'resume-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateResume(Long resumeId, ResumeUpdateRequest request) {
         Resume resume = findResumeById(resumeId);
         validateMemberAccess(resume);
@@ -99,7 +98,7 @@ public class ResumeService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'resume-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteResume(Long resumeId) {
         Resume resume = findResumeById(resumeId);
         validateMemberAccess(resume);
@@ -107,14 +106,29 @@ public class ResumeService {
         resumeRepository.delete(resume);
     }
 
+    @Cacheable(value = CACHE_NAME, key = "'resume-content:' + #resumeId")
     public ResumeResponse getResumeById(Long resumeId) {
+        String cacheKey = CACHE_NAME + "::resume-content:" + resumeId;
+
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+        }
+
         Resume resume = findResumeById(resumeId);
         validateMemberAccess(resume);
         return ResumeResponse.from(resume);
     }
 
-    @Transactional(readOnly = true)
+    @Cacheable(value = CACHE_NAME, key = "'resume-detail:' + #resumeId")
     public ResumeDetailResponse getResumeDetailById(Long resumeId) {
+        String cacheKey = CACHE_NAME + "::resume-detail:" + resumeId;
+
+        Long ttl = redisTemplate.getExpire(cacheKey);
+        if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
+            redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
+        }
+
         Resume resume = findResumeById(resumeId);
         validateMemberAccess(resume);
 

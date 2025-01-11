@@ -25,10 +25,10 @@ public class SavedModuleService {
     private static final long EXTEND_TTL_THRESHOLD = 30 * 60;
     private static final long EXTEND_TTL_DURATION = 60 * 60;
 
-    @Cacheable(value = CACHE_NAME, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = CACHE_NAME, key = "'savedmodule-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public SavedModuleResponse getMySavedModules() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String cacheKey = CACHE_NAME + "::" + memberId;
+        String cacheKey = CACHE_NAME + "::savedmodule-member:" + memberId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {

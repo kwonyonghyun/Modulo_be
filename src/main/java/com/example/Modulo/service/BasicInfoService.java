@@ -17,10 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,7 +84,7 @@ public class BasicInfoService {
 
         Long basicInfoId = basicInfoRepository.save(basicInfo).getId();
 
-        String cacheKey = CACHE_NAME + "::basicInfo:" + basicInfoId;
+        String cacheKey = CACHE_NAME + "::basicinfo-content:" + basicInfoId;
         BasicInfoResponse response = BasicInfoResponse.from(basicInfo);
         redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
 
@@ -94,10 +92,10 @@ public class BasicInfoService {
         return basicInfoId;
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = CACHE_NAME, key = "'basicinfo-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<BasicInfoResponse> getMyBasicInfos() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String cacheKey = CACHE_NAME + "::member:" + memberId;
+        String cacheKey = CACHE_NAME + "::basicinfo-member:" + memberId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -110,7 +108,7 @@ public class BasicInfoService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'basicinfo-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateBasicInfo(Long id, BasicInfoUpdateRequest request, MultipartFile profileImage) {
         BasicInfo basicInfo = findBasicInfoById(id);
         validateMemberAccess(basicInfo);
@@ -148,7 +146,7 @@ public class BasicInfoService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'basicinfo-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteBasicInfo(Long id) {
         BasicInfo basicInfo = findBasicInfoById(id);
         validateMemberAccess(basicInfo);
@@ -162,9 +160,9 @@ public class BasicInfoService {
         resumeSectionHandler.handleContentDeletion(id, SectionType.BASIC_INFO);
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'basicInfo:' + #id")
+    @Cacheable(value = CACHE_NAME, key = "'basicinfo-content:' + #id")
     public BasicInfoResponse getBasicInfoById(Long id) {
-        String cacheKey = CACHE_NAME + "::basicInfo:" + id;
+        String cacheKey = CACHE_NAME + "::basicinfo-content:" + id;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -189,8 +187,8 @@ public class BasicInfoService {
 
     private void evictRelatedCaches() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
-        redisTemplate.delete("savedModules::" + memberId);
-        redisTemplate.delete("resumes::" + memberId);
+        redisTemplate.delete(CACHE_NAME + "::basicinfo-member:" + memberId);
+        redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
+        redisTemplate.delete("resumes::resume-member:" + memberId);
     }
 }

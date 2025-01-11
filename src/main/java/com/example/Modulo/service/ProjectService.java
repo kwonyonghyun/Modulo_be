@@ -13,9 +13,7 @@ import com.example.Modulo.repository.ProjectRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -65,17 +63,17 @@ public class ProjectService {
         Long projectId = projectRepository.save(project).getId();
 
         ProjectResponse response = ProjectResponse.from(project);
-        String cacheKey = CACHE_NAME + "::project:" + projectId;
+        String cacheKey = CACHE_NAME + "::project-content:" + projectId;
         redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
 
         evictRelatedCaches();
         return projectId;
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = CACHE_NAME, key = "'project-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<ProjectResponse> getMyProjects() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String cacheKey = CACHE_NAME + "::member:" + memberId;
+        String cacheKey = CACHE_NAME + "::project-member:" + memberId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -89,7 +87,7 @@ public class ProjectService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'project-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateProject(Long projectId, ProjectUpdateRequest request) {
         Project project = findProjectById(projectId);
         validateMemberAccess(project);
@@ -108,7 +106,7 @@ public class ProjectService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'project-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteProject(Long projectId) {
         Project project = findProjectById(projectId);
         validateMemberAccess(project);
@@ -118,9 +116,9 @@ public class ProjectService {
         resumeSectionHandler.handleContentDeletion(projectId, SectionType.PROJECT);
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'project:' + #projectId")
+    @Cacheable(value = CACHE_NAME, key = "'project-content:' + #projectId")
     public ProjectResponse getProjectById(Long projectId) {
-        String cacheKey = CACHE_NAME + "::project:" + projectId;
+        String cacheKey = CACHE_NAME + "::project-content:" + projectId;
 
         Project project = findProjectById(projectId);
         validateMemberAccess(project);
@@ -131,7 +129,7 @@ public class ProjectService {
             redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
         }
 
-        return ProjectResponse.from(project);
+        return response;
     }
 
     private Project findProjectById(Long projectId) {
@@ -148,8 +146,8 @@ public class ProjectService {
 
     private void evictRelatedCaches() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
-        redisTemplate.delete("savedModules::" + memberId);
-        redisTemplate.delete("resumes::" + memberId);
+        redisTemplate.delete(CACHE_NAME + "::project-member:" + memberId);
+        redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
+        redisTemplate.delete("resumes::resume-member:" + memberId);
     }
 }

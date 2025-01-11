@@ -161,7 +161,7 @@ class EtcServiceTest {
     void getMyEtcs_Success_ExtendCacheTTL() {
         // given
         given(etcRepository.findAllByMemberId(1L)).willReturn(List.of(etc));
-        given(redisTemplate.getExpire("etc::member:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("etc::etc-member:1")).willReturn(1500L);
 
         // when
         List<EtcResponse> responses = etcService.getMyEtcs();
@@ -176,7 +176,7 @@ class EtcServiceTest {
     void getEtcById_Success_ExtendCacheTTL() {
         // given
         given(etcRepository.findById(1L)).willReturn(Optional.of(etc));
-        given(redisTemplate.getExpire("etc::etc:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("etc::etc-content:1")).willReturn(1500L);
 
         // when
         EtcResponse response = etcService.getEtcById(1L);

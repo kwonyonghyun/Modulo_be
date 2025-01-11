@@ -15,10 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,7 +61,7 @@ public class EducationService {
 
         Long educationId = educationRepository.save(education).getId();
 
-        String cacheKey = CACHE_NAME + "::education:" + educationId;
+        String cacheKey = CACHE_NAME + "::education-content:" + educationId;
         EducationResponse response = EducationResponse.from(education);
         redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
 
@@ -71,10 +69,10 @@ public class EducationService {
         return educationId;
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = CACHE_NAME, key = "'education-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<EducationResponse> getMyEducations() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String cacheKey = CACHE_NAME + "::member:" + memberId;
+        String cacheKey = CACHE_NAME + "::education-member:" + memberId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -88,7 +86,7 @@ public class EducationService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'education-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateEducation(Long educationId, EducationUpdateRequest request) {
         Education education = getEducation(educationId);
         validateMemberAccess(education);
@@ -105,7 +103,7 @@ public class EducationService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'education-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteEducation(Long educationId) {
         Education education = getEducation(educationId);
         validateMemberAccess(education);
@@ -115,9 +113,9 @@ public class EducationService {
         resumeSectionHandler.handleContentDeletion(educationId, SectionType.EDUCATION);
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'education:' + #educationId")
+    @Cacheable(value = CACHE_NAME, key = "'education-content:' + #educationId")
     public EducationResponse getEducationById(Long educationId) {
-        String cacheKey = CACHE_NAME + "::education:" + educationId;
+        String cacheKey = CACHE_NAME + "::education-content:" + educationId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -140,16 +138,10 @@ public class EducationService {
         }
     }
 
-    private void validateMemberAccess(Education education, Long memberId) {
-        if (!education.getMember().getId().equals(memberId)) {
-            throw new UnauthorizedAccessException();
-        }
-    }
-
     private void evictRelatedCaches() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
-        redisTemplate.delete("savedModules::" + memberId);
-        redisTemplate.delete("resumes::" + memberId);
+        redisTemplate.delete(CACHE_NAME + "::education-member:" + memberId);
+        redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
+        redisTemplate.delete("resumes::resume-member:" + memberId);
     }
 }

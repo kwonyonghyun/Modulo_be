@@ -162,7 +162,7 @@ class CareerServiceTest {
     void getMyCareers_Success_ExtendCacheTTL() {
         // given
         given(careerRepository.findAllByMemberId(1L)).willReturn(List.of(career));
-        given(redisTemplate.getExpire("career::member:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("career::career-member:1")).willReturn(1500L);
 
         // when
         List<CareerResponse> responses = careerService.getMyCareers();
@@ -177,7 +177,7 @@ class CareerServiceTest {
     void getCareerById_Success_ExtendCacheTTL() {
         // given
         given(careerRepository.findById(1L)).willReturn(Optional.of(career));
-        given(redisTemplate.getExpire("career::career:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("career::career-content:1")).willReturn(1500L);
 
         // when
         CareerResponse response = careerService.getCareerById(1L);

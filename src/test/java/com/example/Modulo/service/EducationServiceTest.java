@@ -155,7 +155,7 @@ class EducationServiceTest {
     void getMyEducations_Success_ExtendCacheTTL() {
         // given
         given(educationRepository.findAllByMemberId(1L)).willReturn(List.of(education));
-        given(redisTemplate.getExpire("education::member:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("education::education-member:1")).willReturn(1500L);
 
         // when
         List<EducationResponse> responses = educationService.getMyEducations();
@@ -170,7 +170,7 @@ class EducationServiceTest {
     void getEducationById_Success_ExtendCacheTTL() {
         // given
         given(educationRepository.findById(1L)).willReturn(Optional.of(education));
-        given(redisTemplate.getExpire("education::education:1")).willReturn(1500L);
+        given(redisTemplate.getExpire("education::education-content:1")).willReturn(1500L);
 
         // when
         EducationResponse response = educationService.getEducationById(1L);

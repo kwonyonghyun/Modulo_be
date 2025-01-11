@@ -13,12 +13,9 @@ import com.example.Modulo.repository.SelfIntroductionRepository;
 import com.example.Modulo.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +56,7 @@ public class SelfIntroductionService {
 
         Long introductionId = selfIntroductionRepository.save(selfIntroduction).getId();
 
-        String cacheKey = CACHE_NAME + "::selfIntroduction:" + introductionId;
+        String cacheKey = CACHE_NAME + "::selfintro-content:" + introductionId;
         SelfIntroductionResponse response = SelfIntroductionResponse.from(selfIntroduction);
         redisTemplate.opsForValue().set(cacheKey, response, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
 
@@ -67,10 +64,10 @@ public class SelfIntroductionService {
         return introductionId;
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Cacheable(value = CACHE_NAME, key = "'selfintro-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public List<SelfIntroductionResponse> getMySelfIntroductions() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        String cacheKey = CACHE_NAME + "::member:" + memberId;
+        String cacheKey = CACHE_NAME + "::selfintro-member:" + memberId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -84,7 +81,7 @@ public class SelfIntroductionService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'selfintro-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void updateSelfIntroduction(Long selfIntroductionId, SelfIntroductionUpdateRequest request) {
         SelfIntroduction selfIntroduction = getSelfIntroduction(selfIntroductionId);
         validateMemberAccess(selfIntroduction, getCurrentMemberId());
@@ -98,7 +95,7 @@ public class SelfIntroductionService {
     }
 
     @Transactional
-    @CacheEvict(value = CACHE_NAME, key = "'member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = CACHE_NAME, key = "'selfintro-member:' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public void deleteSelfIntroduction(Long selfIntroductionId) {
         SelfIntroduction selfIntroduction = getSelfIntroduction(selfIntroductionId);
         validateMemberAccess(selfIntroduction, getCurrentMemberId());
@@ -108,9 +105,9 @@ public class SelfIntroductionService {
         resumeSectionHandler.handleContentDeletion(selfIntroductionId, SectionType.SELF_INTRODUCTION);
     }
 
-    @Cacheable(value = CACHE_NAME, key = "'selfIntroduction:' + #selfIntroductionId")
+    @Cacheable(value = CACHE_NAME, key = "'selfintro-content:' + #selfIntroductionId")
     public SelfIntroductionResponse getIntroductionById(Long selfIntroductionId) {
-        String cacheKey = CACHE_NAME + "::selfIntroduction:" + selfIntroductionId;
+        String cacheKey = CACHE_NAME + "::selfintro-content:" + selfIntroductionId;
 
         Long ttl = redisTemplate.getExpire(cacheKey);
         if (ttl != null && ttl < EXTEND_TTL_THRESHOLD) {
@@ -135,8 +132,8 @@ public class SelfIntroductionService {
 
     private void evictRelatedCaches() {
         String memberId = SecurityContextHolder.getContext().getAuthentication().getName();
-        redisTemplate.delete(CACHE_NAME + "::member:" + memberId);
-        redisTemplate.delete("savedModules::" + memberId);
-        redisTemplate.delete("resumes::" + memberId);
+        redisTemplate.delete(CACHE_NAME + "::selfintro-member:" + memberId);
+        redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
+        redisTemplate.delete("resumes::resume-member:" + memberId);
     }
 }
