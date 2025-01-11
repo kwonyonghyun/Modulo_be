@@ -101,6 +101,7 @@ public class CareerService {
                 request.getAchievements()
         );
 
+        evictContentCache(careerId);
         evictRelatedCaches();
     }
 
@@ -112,6 +113,7 @@ public class CareerService {
 
         careerRepository.delete(career);
         evictRelatedCaches();
+        evictContentCache(careerId);
         resumeSectionHandler.handleContentDeletion(careerId, SectionType.CAREER);
     }
 
@@ -152,5 +154,9 @@ public class CareerService {
         redisTemplate.delete(CACHE_NAME + "::career-member:" + memberId);
         redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
         redisTemplate.delete("resumes::resume-member:" + memberId);
+    }
+
+    private void evictContentCache(Long contentId) {
+        redisTemplate.delete(CACHE_NAME + "::career-content:" + contentId);
     }
 }

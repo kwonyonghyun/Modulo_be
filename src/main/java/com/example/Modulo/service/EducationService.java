@@ -99,6 +99,7 @@ public class EducationService {
                 request.getEducationLevel()
         );
 
+        evictContentCache(educationId);
         evictRelatedCaches();
     }
 
@@ -110,6 +111,7 @@ public class EducationService {
 
         educationRepository.delete(education);
         evictRelatedCaches();
+        evictContentCache(educationId);
         resumeSectionHandler.handleContentDeletion(educationId, SectionType.EDUCATION);
     }
 
@@ -143,5 +145,9 @@ public class EducationService {
         redisTemplate.delete(CACHE_NAME + "::education-member:" + memberId);
         redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
         redisTemplate.delete("resumes::resume-member:" + memberId);
+    }
+
+    private void evictContentCache(Long contentId) {
+        redisTemplate.delete(CACHE_NAME + "::education-content:" + contentId);
     }
 }

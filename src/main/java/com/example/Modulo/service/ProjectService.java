@@ -102,6 +102,7 @@ public class ProjectService {
                 request.getDetailedDescription()
         );
 
+        evictContentCache(projectId);
         evictRelatedCaches();
     }
 
@@ -113,6 +114,7 @@ public class ProjectService {
 
         projectRepository.delete(project);
         evictRelatedCaches();
+        evictContentCache(projectId);
         resumeSectionHandler.handleContentDeletion(projectId, SectionType.PROJECT);
     }
 
@@ -149,5 +151,9 @@ public class ProjectService {
         redisTemplate.delete(CACHE_NAME + "::project-member:" + memberId);
         redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
         redisTemplate.delete("resumes::resume-member:" + memberId);
+    }
+
+    private void evictContentCache(Long contentId) {
+        redisTemplate.delete(CACHE_NAME + "::project-content:" + contentId);
     }
 }

@@ -91,6 +91,7 @@ public class SelfIntroductionService {
                 request.getContent()
         );
 
+        evictContentCache(selfIntroductionId);
         evictRelatedCaches();
     }
 
@@ -102,6 +103,7 @@ public class SelfIntroductionService {
 
         selfIntroductionRepository.delete(selfIntroduction);
         evictRelatedCaches();
+        evictContentCache(selfIntroductionId);
         resumeSectionHandler.handleContentDeletion(selfIntroductionId, SectionType.SELF_INTRODUCTION);
     }
 
@@ -135,5 +137,9 @@ public class SelfIntroductionService {
         redisTemplate.delete(CACHE_NAME + "::selfintro-member:" + memberId);
         redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
         redisTemplate.delete("resumes::resume-member:" + memberId);
+    }
+
+    private void evictContentCache(Long contentId) {
+        redisTemplate.delete(CACHE_NAME + "::selfintro-content:" + contentId);
     }
 }

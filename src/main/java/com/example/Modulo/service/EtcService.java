@@ -98,6 +98,7 @@ public class EtcService {
                 request.getScore()
         );
 
+        evictContentCache(id);
         evictRelatedCaches();
     }
 
@@ -111,6 +112,7 @@ public class EtcService {
 
         etcRepository.delete(etc);
         evictRelatedCaches();
+        evictContentCache(id);
         resumeSectionHandler.handleContentDeletion(id, SectionType.ETC);
     }
 
@@ -148,5 +150,9 @@ public class EtcService {
         redisTemplate.delete(CACHE_NAME + "::etc-member:" + memberId);
         redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
         redisTemplate.delete("resumes::resume-member:" + memberId);
+    }
+
+    private void evictContentCache(Long contentId) {
+        redisTemplate.delete(CACHE_NAME + "::etc-content:" + contentId);
     }
 }

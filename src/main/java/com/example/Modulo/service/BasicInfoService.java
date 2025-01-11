@@ -142,6 +142,7 @@ public class BasicInfoService {
         basicInfo.updateLinks(links);
         basicInfo.updateTechStack(request.getTechStack());
 
+        evictContentCache(id);
         evictRelatedCaches();
     }
 
@@ -156,6 +157,7 @@ public class BasicInfoService {
         }
 
         basicInfoRepository.delete(basicInfo);
+        evictContentCache(id);
         evictRelatedCaches();
         resumeSectionHandler.handleContentDeletion(id, SectionType.BASIC_INFO);
     }
@@ -191,4 +193,9 @@ public class BasicInfoService {
         redisTemplate.delete("savedModules::savedmodule-member:" + memberId);
         redisTemplate.delete("resumes::resume-member:" + memberId);
     }
+
+    private void evictContentCache(Long contentId) {
+        redisTemplate.delete(CACHE_NAME + "::basicinfo-content:" + contentId);
+    }
+
 }
