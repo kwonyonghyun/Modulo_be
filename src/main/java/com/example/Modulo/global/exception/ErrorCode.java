@@ -13,6 +13,7 @@ public enum ErrorCode {
     INPUT_TYPE_INVALID(400, "G004", "입력 타입이 유효하지 않습니다."),
     HTTP_MESSAGE_NOT_READABLE(400, "G005", "request message body가 없거나, 값 타입이 올바르지 않습니다."),
     HTTP_HEADER_INVALID(400, "G006", "request header가 유효하지 않습니다."),
+    RESOURCE_NOT_FOUND(404, "G007", "요청한 리소스를 찾을 수 없습니다."),
     SOCIAL_LOGIN_TOKEN_NOT_FOUND(500, "G019", "소셜 로그인 서버로부터 발급된 Access Token이 없습니다."),
     SOCIAL_LOGIN_USER_INFO_NOT_FOUND(500, "G020", "소셜 로그인 서버에서 조회한 유저 정보가 없습니다."),
 
