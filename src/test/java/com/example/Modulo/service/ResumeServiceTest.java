@@ -11,6 +11,7 @@ import com.example.Modulo.dto.response.ResumeResponse;
 import com.example.Modulo.exception.InvalidSectionContentException;
 import com.example.Modulo.exception.ResumeNotFoundException;
 import com.example.Modulo.exception.UnauthorizedAccessException;
+import com.example.Modulo.global.enums.ResumeTheme;
 import com.example.Modulo.global.enums.SectionType;
 import com.example.Modulo.repository.MemberRepository;
 import com.example.Modulo.repository.ResumeRepository;
@@ -101,6 +102,7 @@ class ResumeServiceTest {
         resume = Resume.builder()
                 .member(member)
                 .title("테스트 이력서")
+                .theme(ResumeTheme.BASIC)
                 .build();
 
         Field resumeIdField = resume.getClass().getDeclaredField("id");
@@ -114,10 +116,12 @@ class ResumeServiceTest {
 
         createRequest = new ResumeCreateRequest();
         setFieldValue(createRequest, "title", "테스트 이력서");
+        setFieldValue(createRequest, "theme", ResumeTheme.BASIC);
         setFieldValue(createRequest, "sections", sections);
 
         updateRequest = new ResumeUpdateRequest();
         setFieldValue(updateRequest, "title", "수정된 이력서");
+        setFieldValue(updateRequest, "theme", ResumeTheme.MODERN);
         setFieldValue(updateRequest, "sections", sections);
 
         SecurityContextHolder.setContext(securityContext);
@@ -182,6 +186,7 @@ class ResumeServiceTest {
 
         // then
         assertThat(resume.getTitle()).isEqualTo(updateRequest.getTitle());
+        assertThat(resume.getTheme()).isEqualTo(updateRequest.getTheme());
     }
 
     @Test
@@ -224,6 +229,7 @@ class ResumeServiceTest {
         Resume otherResume = Resume.builder()
                 .member(otherMember)
                 .title("다른 이력서")
+                .theme(ResumeTheme.BASIC)
                 .build();
 
         Field otherResumeIdField = otherResume.getClass().getDeclaredField("id");
@@ -235,6 +241,24 @@ class ResumeServiceTest {
         // when & then
         assertThatThrownBy(() -> resumeService.updateResume(1L, updateRequest))
                 .isInstanceOf(UnauthorizedAccessException.class);
+    }
+
+    @Test
+    @DisplayName("테마 업데이트 성공")
+    void updateResume_ThemeUpdate_Success() throws Exception {
+        // given
+        given(resumeRepository.findById(1L)).willReturn(Optional.of(resume));
+
+        updateRequest = new ResumeUpdateRequest();
+        setFieldValue(updateRequest, "title", "수정된 이력서");
+        setFieldValue(updateRequest, "theme", ResumeTheme.NOTION);
+        setFieldValue(updateRequest, "sections", new ArrayList<>());
+
+        // when
+        resumeService.updateResume(1L, updateRequest);
+
+        // then
+        assertThat(resume.getTheme()).isEqualTo(ResumeTheme.NOTION);
     }
 
     @Test

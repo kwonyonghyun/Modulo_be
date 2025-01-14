@@ -2,6 +2,7 @@ package com.example.Modulo.domain;
 
 import com.example.Modulo.exception.InvalidResumeTitleException;
 import com.example.Modulo.global.common.BaseTimeEntity;
+import com.example.Modulo.global.enums.ResumeTheme;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,19 +27,28 @@ public class Resume extends BaseTimeEntity {
     @Column(nullable = false)
     private String title;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ResumeTheme theme;
+
     @OneToMany(mappedBy = "resume", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ResumeSection> sections = new ArrayList<>();
 
     @Builder
-    public Resume(Member member, String title) {
+    public Resume(Member member, String title, ResumeTheme theme) {
         validateTitle(title);
         this.member = member;
         this.title = title;
+        this.theme = theme != null ? theme : ResumeTheme.BASIC;
     }
 
     public void updateTitle(String title) {
         validateTitle(title);
         this.title = title;
+    }
+
+    public void updateTheme(ResumeTheme theme) {
+        this.theme = theme != null ? theme : this.theme;
     }
 
     public void updateSections(List<ResumeSection> sections) {

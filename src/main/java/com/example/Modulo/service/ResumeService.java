@@ -62,6 +62,7 @@ public class ResumeService {
 
         Resume resume = Resume.builder()
                 .member(member)
+                .theme(request.getTheme())
                 .title(request.getTitle())
                 .build();
 
@@ -94,6 +95,7 @@ public class ResumeService {
         validateMemberAccess(resume);
 
         resume.updateTitle(request.getTitle());
+        resume.updateTheme(request.getTheme());
         evictContentCache(resumeId);
         validateAndCreateSections(request.getSections(), resume);
     }
@@ -137,6 +139,7 @@ public class ResumeService {
         return ResumeDetailResponse.builder()
                 .id(resume.getId())
                 .title(resume.getTitle())
+                .theme(resume.getTheme())
                 .createdAt(resume.getCreatedAt())
                 .sections(resume.getSections().stream()
                         .map(section -> {

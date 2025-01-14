@@ -1,6 +1,7 @@
 package com.example.Modulo.dto.response;
 
 import com.example.Modulo.domain.*;
+import com.example.Modulo.global.enums.ResumeTheme;
 import com.example.Modulo.service.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class ResumeDetailResponse implements Serializable {
     private Long id;
     private String title;
+    private ResumeTheme theme;
     private List<ResumeSectionDetailResponse> sections;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
@@ -36,6 +38,7 @@ public class ResumeDetailResponse implements Serializable {
         return ResumeDetailResponse.builder()
                 .id(resume.getId())
                 .title(resume.getTitle())
+                .theme(resume.getTheme())
                 .createdAt(resume.getCreatedAt())
                 .sections(resume.getSections().stream()
                         .map(section -> ResumeSectionDetailResponse.from(section,
