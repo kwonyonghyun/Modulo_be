@@ -1,13 +1,9 @@
-name: Deploy to Development EC2
+name: Deploy to Development Server
 
 on:
   push:
     branches: [ "dev" ]
   workflow_dispatch:
-
-env:
-  DOCKER_IMAGE: kwonyonghyun/modulo
-  DOCKER_CONTAINER: modulo-app-dev
 
 jobs:
   deploy:
@@ -23,14 +19,8 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Test with Gradle
-        run: ./gradlew test
-
       - name: Build with Gradle
-        run: ./gradlew build -x test
+        run: ./gradlew build
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
@@ -44,8 +34,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.DOCKER_IMAGE }}:dev-latest
-            ${{ env.DOCKER_IMAGE }}:dev-${{ github.sha }}
+            kwonyonghyun/modulo:dev-latest
+            kwonyonghyun/modulo:dev-${{ github.sha }}
 
       - name: Create .env.dev file
         run: |
@@ -61,22 +51,26 @@ jobs:
           echo "SWAGGER_PASSWORD=${{ secrets.SWAGGER_PASSWORD }}" >> .env.dev
           echo "CORS_ALLOWED_ORIGINS=${{ secrets.DEV_CORS_ALLOWED_ORIGINS }}" >> .env.dev
 
-      - name: Copy files to EC2
+      - name: Deploy to Personal Server
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.DEV_EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.DEV_EC2_SSH_KEY }}
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
           source: ".env.dev,docker-compose.dev.yml"
-          target: "~/"
+          target: "${{ secrets.SERVER_TARGET_PATH }}"
+          strip_components: 0
 
-      - name: Deploy to EC2
+      - name: Execute deployment commands
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.DEV_EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.DEV_EC2_SSH_KEY }}
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
           script: |
+            cd ${{ secrets.SERVER_TARGET_PATH }}
             docker-compose -f docker-compose.dev.yml --env-file .env.dev down || true
             docker-compose -f docker-compose.dev.yml --env-file .env.dev pull
             docker-compose -f docker-compose.dev.yml --env-file .env.dev up -d
