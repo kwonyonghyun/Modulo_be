@@ -1,7 +1,6 @@
 package com.example.Modulo.domain;
 
 import com.example.Modulo.exception.InvalidCareerDateException;
-import com.example.Modulo.exception.InvalidCareerFieldException;
 import com.example.Modulo.global.enums.OAuthProvider;
 import com.example.Modulo.global.exception.BusinessException;
 import com.example.Modulo.global.exception.ErrorCode;

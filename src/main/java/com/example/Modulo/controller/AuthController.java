@@ -1,7 +1,6 @@
 package com.example.Modulo.controller;
 
 import com.example.Modulo.dto.response.TokenResponse;
-import com.example.Modulo.global.annotation.TrackUserActivity;
 import com.example.Modulo.global.response.ResultCode;
 import com.example.Modulo.global.response.ResultResponse;
 import com.example.Modulo.service.AuthService;

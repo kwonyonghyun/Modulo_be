@@ -5,9 +5,6 @@ import com.example.Modulo.domain.Member;
 import com.example.Modulo.dto.request.BasicInfoCreateRequest;
 import com.example.Modulo.dto.request.BasicInfoUpdateRequest;
 import com.example.Modulo.dto.response.BasicInfoResponse;
-import com.example.Modulo.exception.BasicInfoNotFoundException;
-import com.example.Modulo.exception.BasicInfoUnauthorizedException;
-import com.example.Modulo.exception.MemberNotFoundException;
 import com.example.Modulo.global.enums.CareerYear;
 import com.example.Modulo.global.service.S3Service;
 import com.example.Modulo.repository.BasicInfoRepository;
@@ -35,7 +32,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;

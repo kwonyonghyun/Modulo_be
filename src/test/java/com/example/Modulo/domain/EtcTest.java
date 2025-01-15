@@ -1,8 +1,6 @@
 package com.example.Modulo.domain;
 
 import com.example.Modulo.exception.InvalidEtcFieldException;
-import com.example.Modulo.exception.InvalidProjectDateException;
-import com.example.Modulo.exception.InvalidProjectFieldException;
 import com.example.Modulo.global.enums.EtcType;
 import com.example.Modulo.global.enums.OAuthProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,9 +8,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;

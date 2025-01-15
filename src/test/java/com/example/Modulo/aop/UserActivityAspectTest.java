@@ -14,7 +14,6 @@ import org.springframework.data.redis.core.SetOperations;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDate;
-import java.util.*;
 
 import static org.mockito.Mockito.*;
 
