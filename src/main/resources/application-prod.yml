@@ -54,6 +54,11 @@ management:
     loggers:
       enabled: true
 
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
