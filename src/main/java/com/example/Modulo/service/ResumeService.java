@@ -25,7 +25,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -82,7 +84,7 @@ public class ResumeService {
             redisTemplate.expire(cacheKey, EXTEND_TTL_DURATION, TimeUnit.SECONDS);
         }
 
-        return resumeRepository.findAllByMemberId(Long.parseLong(memberId)).stream()
+        return resumeRepository.findAllByMemberIdWithSections(Long.parseLong(memberId)).stream()
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .map(ResumeResponse::from)
                 .collect(Collectors.toList());
@@ -174,8 +176,13 @@ public class ResumeService {
     }
 
     private Resume findResumeById(Long resumeId) {
-        return resumeRepository.findById(resumeId)
+        Resume resume = resumeRepository.findByIdWithSections(resumeId)
                 .orElseThrow(ResumeNotFoundException::new);
+
+        List<ResumeSection> sectionsWithContents = resumeRepository.findSectionsByResumeIdWithContents(resumeId);
+        resume.updateSections(sectionsWithContents);
+
+        return resume;
     }
 
     private void validateMemberAccess(Resume resume) {

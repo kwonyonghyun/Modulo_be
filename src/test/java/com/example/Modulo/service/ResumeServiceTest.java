@@ -158,7 +158,7 @@ class ResumeServiceTest {
     @DisplayName("내 이력서 목록 조회 성공 - 캐시 TTL 연장")
     void getMyResumes_Success_ExtendCacheTTL() {
         // given
-        given(resumeRepository.findAllByMemberId(1L)).willReturn(List.of(resume));
+        given(resumeRepository.findAllByMemberIdWithSections(1L)).willReturn(List.of(resume));
         given(redisTemplate.getExpire("resumes::resume-member:1")).willReturn(1500L);
 
         // when
@@ -173,7 +173,7 @@ class ResumeServiceTest {
     @DisplayName("이력서 수정 성공 - 캐시 갱신")
     void updateResume_Success_CacheUpdate() {
         // given
-        given(resumeRepository.findById(1L)).willReturn(Optional.of(resume));
+        given(resumeRepository.findByIdWithSections(1L)).willReturn(Optional.of(resume));
         given(basicInfoService.getBasicInfoById(1L))
                 .willReturn(BasicInfoResponse.builder()
                         .id(1L)
@@ -193,7 +193,7 @@ class ResumeServiceTest {
     @DisplayName("이력서 삭제 성공 - 캐시 제거")
     void deleteResume_Success_CacheEviction() {
         // given
-        given(resumeRepository.findById(1L)).willReturn(Optional.of(resume));
+        given(resumeRepository.findByIdWithSections(1L)).willReturn(Optional.of(resume));
 
         // when
         resumeService.deleteResume(1L);
@@ -206,7 +206,7 @@ class ResumeServiceTest {
     @DisplayName("존재하지 않는 이력서 조회 시 예외 발생")
     void getResumeById_NotFound() {
         // given
-        given(resumeRepository.findById(1L)).willReturn(Optional.empty());
+        given(resumeRepository.findByIdWithSections(1L)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> resumeService.getResumeById(1L))
@@ -236,7 +236,7 @@ class ResumeServiceTest {
         otherResumeIdField.setAccessible(true);
         otherResumeIdField.set(otherResume, 1L);
 
-        given(resumeRepository.findById(1L)).willReturn(Optional.of(otherResume));
+        given(resumeRepository.findByIdWithSections(1L)).willReturn(Optional.of(otherResume));
 
         // when & then
         assertThatThrownBy(() -> resumeService.updateResume(1L, updateRequest))
@@ -247,7 +247,7 @@ class ResumeServiceTest {
     @DisplayName("테마 업데이트 성공")
     void updateResume_ThemeUpdate_Success() throws Exception {
         // given
-        given(resumeRepository.findById(1L)).willReturn(Optional.of(resume));
+        given(resumeRepository.findByIdWithSections(1L)).willReturn(Optional.of(resume));
 
         updateRequest = new ResumeUpdateRequest();
         setFieldValue(updateRequest, "title", "수정된 이력서");
