@@ -4,6 +4,7 @@ import com.example.Modulo.exception.InvalidProjectDateException;
 import com.example.Modulo.exception.InvalidProjectFieldException;
 import com.example.Modulo.global.common.BaseTimeEntity;
 import com.example.Modulo.global.converter.YearMonthConverter;
+
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +17,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+@Table(indexes = @Index(name = "idx_project_member", columnList = "member_id"))
 public class Project extends BaseTimeEntity {
 
     @Id

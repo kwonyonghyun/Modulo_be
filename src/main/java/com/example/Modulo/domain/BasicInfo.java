@@ -13,6 +13,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+@Table(indexes = @Index(name = "idx_basic_info_member", columnList = "member_id"))
 public class BasicInfo extends BaseTimeEntity {
 
     @Id

@@ -15,6 +15,7 @@ import java.time.YearMonth;
 @Entity
 @Getter
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+@Table(indexes = @Index(name = "idx_etc_member", columnList = "member_id"))
 public class Etc extends BaseTimeEntity {
 
     @Id
